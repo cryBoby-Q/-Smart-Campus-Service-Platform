@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>用户登录</title>
+  <link rel="stylesheet" href="../../public/css/common.css">
+</head>
+<body>
+  <div class="form-container">
+    <h2>登录</h2>
+    <input class="form-input" type="text" id="username" placeholder="用户名">
+    <input class="form-input" type="password" id="password" placeholder="密码">
+    <button class="form-btn" id="loginBtn">登录</button>
+    <p class="form-link">没有账号？<a href="register.html">去注册</a></p>
+  </div>
+
+  <script>
+    const loginBtn = document.getElementById('loginBtn');
+    loginBtn.addEventListener('click', async () => {
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value.trim();
+
+      if (!username || !password) {
+        alert('请输入用户名和密码');
+        return;
+      }
+
+      try {
+        const res = await fetch('http://localhost:3001/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+
+        if (data.code === 200) {
+          alert('登录成功！');
+          // 把用户信息存到本地存储，方便个人中心读取
+          localStorage.setItem('user', JSON.stringify(data.data));
+          // 跳转到首页或个人中心
+          window.location.href = 'personal.html';
+        } else {
+          alert(data.msg);
+        }
+      } catch (err) {
+        console.error(err);
+        alert('网络错误，请检查后端服务是否启动');
+      }
+    });
+  </script>
+</body>
+</html>
