@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>个人中心</title>
+  <link rel="stylesheet" href="../../public/css/common.css">
+</head>
+<body>
+  <div class="profile-container">
+    <h2>个人信息</h2>
+    <div class="profile-info">
+      <p>用户名：<span id="userName"></span></p>
+      <p>昵称：<span id="nickName"></span></p>
+      <p>邮箱：<span id="userEmail"></span></p>
+    </div>
+    <button class="profile-btn" id="logoutBtn">退出登录</button>
+  </div>
+
+  <script>
+    // 页面加载时自动获取用户信息
+    window.onload = async () => {
+      // 先从本地存储拿用户信息
+      const localUser = localStorage.getItem('user');
+      if (!localUser) {
+        alert('请先登录');
+        window.location.href = 'login.html';
+        return;
+      }
+
+      const { username } = JSON.parse(localUser);
+      try {
+        // 调用后端接口获取最新用户信息
+        const res = await fetch(`http://localhost:3001/api/user/info?username=${username}`);
+        const data = await res.json();
+
+        if (data.code === 200) {
+          document.getElementById('userName').innerText = data.data.username;
+          document.getElementById('nickName').innerText = data.data.nickname || '未设置';
+          document.getElementById('userEmail').innerText = data.data.email || '未设置';
+        } else {
+          alert(data.msg);
+          localStorage.removeItem('user');
+          window.location.href = 'login.html';
+        }
+      } catch (err) {
+        console.error(err);
+        alert('获取用户信息失败');
+      }
+    };
+
+    // 退出登录
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      localStorage.removeItem('user');
+      alert('已退出登录');
+      window.location.href = 'login.html';
+    });
+  </script>
+</body>
+</html>

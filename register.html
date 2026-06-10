@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>用户注册</title>
+  <link rel="stylesheet" href="../../public/css/common.css">
+</head>
+<body>
+  <div class="form-container">
+    <h2>注册</h2>
+    <input class="form-input" type="text" id="username" placeholder="用户名">
+    <input class="form-input" type="password" id="password" placeholder="密码">
+    <input class="form-input" type="text" id="nickname" placeholder="昵称（选填）">
+    <input class="form-input" type="email" id="email" placeholder="邮箱（选填）">
+    <button class="form-btn" id="registerBtn">注册</button>
+    <p class="form-link">已有账号？<a href="login.html">去登录</a></p>
+  </div>
+
+  <script>
+    const registerBtn = document.getElementById('registerBtn');
+    registerBtn.addEventListener('click', async () => {
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value.trim();
+      const nickname = document.getElementById('nickname').value.trim();
+      const email = document.getElementById('email').value.trim();
+
+      if (!username || !password) {
+        alert('用户名和密码不能为空');
+        return;
+      }
+
+      try {
+        const res = await fetch('http://localhost:3001/api/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password, nickname, email })
+        });
+        const data = await res.json();
+
+        if (data.code === 200) {
+          alert('注册成功！请登录');
+          window.location.href = 'login.html';
+        } else {
+          alert(data.msg);
+        }
+      } catch (err) {
+        console.error(err);
+        alert('网络错误，请检查后端服务是否启动');
+      }
+    });
+  </script>
+</body>
+</html>
