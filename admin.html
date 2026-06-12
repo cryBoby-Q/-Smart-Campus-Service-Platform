@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>管理员后台</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .admin-section {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            background: #fff;
+        }
+        .admin-section h3 {
+            margin-top: 0;
+        }
+        input, button, textarea {
+            margin: 5px;
+        }
+        .cancel-btn {
+            background-color: #f44336;
+        }
+        .cancel-btn:hover {
+            background-color: #d32f2f;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        .export-btn {
+            background-color: #2196F3;
+            margin-left: 10px;
+        }
+        .review-star {
+            color: #ff9800;
+        }
+        .delete-btn {
+            background-color: #f44336;
+            margin-left: 5px;
+        }
+        .delete-btn:hover {
+            background-color: #d32f2f;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>👑 管理员后台</h1>
+    <div class="nav">
+        <a href="index.html">首页</a>
+        <a href="class_query.html">教室预约</a>
+        <a href="lib_query.html">图书馆预约</a>
+        <a href="my_reserve.html">我的预约</a>
+        <a href="stats.html">数据统计</a>
+
+    </div>
+
+    <!-- 添加教室 -->
+    <div class="admin-section">
+        <h3>➕ 添加教室</h3>
+        <input type="text" id="building" placeholder="楼栋 (如: 教学楼A)">
+        <input type="text" id="room_name" placeholder="教室名 (如: 101)">
+        <input type="number" id="capacity" placeholder="容量">
+        <button id="addClassroomBtn">添加教室</button>
+        <span id="addMsg"></span>
+    </div>
+
+    <!-- 添加座位 -->
+    <div class="admin-section">
+        <h3>➕ 添加图书馆座位</h3>
+        <input type="number" id="floor" placeholder="楼层">
+        <input type="text" id="seat_no" placeholder="座位号 (如: A01)">
+        <button id="addSeatBtn">添加座位</button>
+        <span id="addSeatMsg"></span>
+    </div>
+
+    <!-- 公告管理 -->
+    <div class="admin-section">
+        <h3>📢 公告管理</h3>
+        <input type="text" id="annTitle" placeholder="标题" style="width:300px;"><br>
+        <textarea id="annContent" rows="3" placeholder="公告内容" style="width:400px;"></textarea><br>
+        <label><input type="checkbox" id="annTop"> 置顶</label><br>
+        <button id="publishAnnBtn">发布公告</button>
+        <hr>
+        <h4>现有公告</h4>
+        <table id="annTable">
+            <thead><tr><th>ID</th><th>标题</th><th>发布时间</th><th>操作</th></tr></thead>
+            <tbody id="annList"></tbody>
+        </table>
+    </div>
+
+    <!-- 预约记录管理 -->
+    <div class="admin-section">
+        <h3>📋 所有预约记录
+            <button id="exportBtn" class="export-btn">📎 导出 CSV</button>
+            <button id="refreshBtn">刷新</button>
+        </h3>
+        <table id="adminTable">
+            <thead>
+                <tr><th>ID</th><th>用户ID</th><th>类型</th><th>场地</th><th>日期</th><th>时间</th><th>状态</th><th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="adminList"></tbody>
+        </table>
+    </div>
+
+    <!-- 评价管理 -->
+    <div class="admin-section">
+        <h3>⭐ 用户评价管理</h3>
+        <button id="loadReviewsBtn">刷新评价列表</button>
+        <table id="reviewsTable" style="width:100%; margin-top:10px;">
+            <thead>
+                <tr><th>ID</th><th>用户</th><th>场地</th><th>评分</th><th>评论</th><th>预约日期</th><th>评价时间</th><th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="reviewsList"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    const apiBase = 'http://localhost:3000/api';
+
+    // ========== 预约记录管理 ==========
+    async function loadAllReservations() {
+        try {
+            const res = await fetch(`${apiBase}/admin/reservations`);
+            const data = await res.json();
+            const tbody = document.getElementById('adminList');
+            tbody.innerHTML = '';
+            if (data.success && data.data.length > 0) {
+                data.data.forEach(rec => {
+                    const row = tbody.insertRow();
+                    row.insertCell(0).innerText = rec.id;
+                    row.insertCell(1).innerText = rec.user_id;
+                    row.insertCell(2).innerText = rec.type === 'classroom' ? '教室' : '图书馆';
+                    row.insertCell(3).innerText = rec.target_name;
+                    row.insertCell(4).innerText = rec.reserve_date;
+                    row.insertCell(5).innerText = `${rec.start_time?.slice(0,5) || ''}-${rec.end_time?.slice(0,5) || ''}`;
+                    row.insertCell(6).innerText = rec.status;
+                    const actionCell = row.insertCell(7);
+                    // 强制取消按钮（仅对正常预约）
+                    if (rec.status === '正常') {
+                        const cancelBtn = document.createElement('button');
+                        cancelBtn.innerText = '强制取消';
+                        cancelBtn.className = 'cancel-btn';
+                        cancelBtn.onclick = () => forceCancel(rec.id, row);
+                        actionCell.appendChild(cancelBtn);
+                    }
+                    // 删除按钮（无论状态）
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.innerText = '删除';
+                    deleteBtn.className = 'delete-btn';
+                    deleteBtn.onclick = () => adminDeleteReservation(rec.id);
+                    actionCell.appendChild(deleteBtn);
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="8">暂无预约记录</td></tr>';
+            }
+        } catch (err) {
+            console.error(err);
+            alert('加载预约记录失败');
+        }
+    }
+
+    async function forceCancel(recordId, rowElement) {
+        if (!confirm('确认强制取消该预约吗？')) return;
+        try {
+            const res = await fetch(`${apiBase}/admin/cancel`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ record_id: recordId })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('取消成功');
+                rowElement.cells[6].innerText = '已取消';
+                // 移除强制取消按钮，只保留删除按钮
+                const actionCell = rowElement.cells[7];
+                actionCell.innerHTML = '';
+                const deleteBtn = document.createElement('button');
+                deleteBtn.innerText = '删除';
+                deleteBtn.className = 'delete-btn';
+                deleteBtn.onclick = () => adminDeleteReservation(recordId);
+                actionCell.appendChild(deleteBtn);
+            } else {
+                alert(data.error || '取消失败');
+            }
+        } catch (err) {
+            alert('请求失败');
+        }
+    }
+
+    async function adminDeleteReservation(recordId) {
+    if (!confirm('永久删除该预约记录？不可恢复。')) return;
+    try {
+        const res = await fetch(`${apiBase}/admin/reservation/${recordId}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+            alert('删除成功');
+            loadAllReservations(); // 刷新表格
+        } else {
+            alert(data.error || '删除失败');
+        }
+    } catch (err) {
+        alert('请求失败：' + err.message);
+    }
+}
+    // 添加教室
+    document.getElementById('addClassroomBtn').onclick = async () => {
+        const building = document.getElementById('building').value.trim();
+        const room_name = document.getElementById('room_name').value.trim();
+        const capacity = document.getElementById('capacity').value;
+        if (!building || !room_name || !capacity) {
+            alert('请完整填写教室信息');
+            return;
+        }
+        try {
+            const res = await fetch(`${apiBase}/admin/classroom`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ building, room_name, capacity: parseInt(capacity) })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('教室添加成功');
+                document.getElementById('building').value = '';
+                document.getElementById('room_name').value = '';
+                document.getElementById('capacity').value = '';
+            } else {
+                alert(data.error);
+            }
+        } catch (err) {
+            alert('请求失败');
+        }
+    };
+
+    // 添加座位
+    document.getElementById('addSeatBtn').onclick = async () => {
+        const floor = document.getElementById('floor').value;
+        const seat_no = document.getElementById('seat_no').value.trim();
+        if (!floor || !seat_no) {
+            alert('请完整填写座位信息');
+            return;
+        }
+        try {
+            const res = await fetch(`${apiBase}/admin/seat`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ floor: parseInt(floor), seat_no })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('座位添加成功');
+                document.getElementById('floor').value = '';
+                document.getElementById('seat_no').value = '';
+            } else {
+                alert(data.error);
+            }
+        } catch (err) {
+            alert('请求失败');
+        }
+    };
+
+    // 导出 CSV
+    document.getElementById('exportBtn').onclick = () => {
+        window.location.href = `${apiBase}/admin/export`;
+    };
+    document.getElementById('refreshBtn').onclick = loadAllReservations;
+
+    // ========== 公告管理 ==========
+    async function loadAdminAnnouncements() {
+        try {
+            const res = await fetch(`${apiBase}/announcements`);
+            const data = await res.json();
+            const tbody = document.getElementById('annList');
+            tbody.innerHTML = '';
+            if (data.success && data.data.length > 0) {
+                data.data.forEach(ann => {
+                    const row = tbody.insertRow();
+                    row.insertCell(0).innerText = ann.id;
+                    row.insertCell(1).innerText = ann.title;
+                    row.insertCell(2).innerText = ann.create_time;
+                    const delBtn = document.createElement('button');
+                    delBtn.innerText = '删除';
+                    delBtn.style.backgroundColor = '#f44336';
+                    delBtn.onclick = () => deleteAnnouncement(ann.id);
+                    row.insertCell(3).appendChild(delBtn);
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="4">暂无公告</td></tr>';
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    async function deleteAnnouncement(id) {
+        if (!confirm('删除后无法恢复，确定吗？')) return;
+        try {
+            const res = await fetch(`${apiBase}/admin/announcement/${id}`, { method: 'DELETE' });
+            const result = await res.json();
+            if (result.success) {
+                alert('删除成功');
+                loadAdminAnnouncements();
+            } else {
+                alert(result.error);
+            }
+        } catch (err) {
+            alert('请求失败');
+        }
+    }
+
+    document.getElementById('publishAnnBtn').onclick = async () => {
+        const title = document.getElementById('annTitle').value.trim();
+        const content = document.getElementById('annContent').value.trim();
+        const is_top = document.getElementById('annTop').checked ? 1 : 0;
+        if (!title || !content) {
+            alert('请填写标题和内容');
+            return;
+        }
+        try {
+            const res = await fetch(`${apiBase}/admin/announcement`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, content, is_top })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('发布成功');
+                document.getElementById('annTitle').value = '';
+                document.getElementById('annContent').value = '';
+                document.getElementById('annTop').checked = false;
+                loadAdminAnnouncements();
+            } else {
+                alert(data.error);
+            }
+        } catch (err) {
+            alert('请求失败');
+        }
+    };
+
+    // ========== 评价管理 ==========
+    async function loadAllReviews() {
+        try {
+            const res = await fetch(`${apiBase}/admin/reviews`);
+            const data = await res.json();
+            const tbody = document.getElementById('reviewsList');
+            tbody.innerHTML = '';
+            if (data.success && data.data.length > 0) {
+                data.data.forEach(rev => {
+                    const row = tbody.insertRow();
+                    row.insertCell(0).innerText = rev.id;
+                    row.insertCell(1).innerText = rev.user_id;
+                    row.insertCell(2).innerText = rev.target_name;
+                    const stars = '★'.repeat(rev.rating) + '☆'.repeat(5 - rev.rating);
+                    row.insertCell(3).innerHTML = `<span class="review-star">${stars}</span>`;
+                    row.insertCell(4).innerText = rev.comment || '无';
+                    row.insertCell(5).innerText = rev.reserve_date;
+                    row.insertCell(6).innerText = rev.created_at ? rev.created_at.slice(0,16) : '';
+                    const delBtn = document.createElement('button');
+                    delBtn.innerText = '删除';
+                    delBtn.style.backgroundColor = '#f44336';
+                    delBtn.onclick = () => deleteReview(rev.id);
+                    row.insertCell(7).appendChild(delBtn);
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="8">暂无评价</td></tr>';
+            }
+        } catch (err) {
+            console.error(err);
+            alert('加载评价失败');
+        }
+    }
+
+    async function deleteReview(id) {
+        if (!confirm('确定删除该评价吗？')) return;
+        try {
+            const res = await fetch(`${apiBase}/admin/review/${id}`, { method: 'DELETE' });
+            const data = await res.json();
+            if (data.success) {
+                alert('删除成功');
+                loadAllReviews();
+            } else {
+                alert(data.error);
+            }
+        } catch (err) {
+            alert('请求失败');
+        }
+    }
+
+    document.getElementById('loadReviewsBtn').onclick = loadAllReviews;
+
+    // 初始化加载
+    loadAllReservations();
+    loadAdminAnnouncements();
+    loadAllReviews();
+</script>
+</body>
+</html>

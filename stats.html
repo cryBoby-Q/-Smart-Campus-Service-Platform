@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>预约数据统计</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        .chart-container {
+            width: 45%;
+            height: 400px;
+            margin: 10px;
+            display: inline-block;
+            background: white;
+            border-radius: 16px;
+            padding: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .full-chart {
+            width: 90%;
+            height: 400px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 16px;
+            padding: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        @media (max-width: 768px) {
+            .chart-container { width: 90%; display: block; margin: 10px auto; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📊 预约数据统计</h1>
+    <div class="nav">
+        <a href="index.html">首页</a>
+        <a href="class_query.html">教室预约</a>
+        <a href="lib_query.html">图书馆预约</a>
+        <a href="my_reserve.html">我的预约</a>
+        <a href="admin.html">管理员</a>
+    </div>
+    <div id="classroomChart" class="chart-container"></div>
+    <div id="libraryChart" class="chart-container"></div>
+    <div id="trendChart" class="full-chart"></div>
+    <div id="message" style="text-align:center; color:gray; margin-top:20px;"></div>
+</div>
+
+<script>
+    const apiBase = 'http://localhost:3000/api';
+
+    async function loadClassroomStats() {
+        try {
+            const res = await fetch(`${apiBase}/stats/classroom`);
+            const data = await res.json();
+            if (data.success && data.data.length > 0) {
+                const chart = echarts.init(document.getElementById('classroomChart'));
+                chart.setOption({
+                    title: { text: '🔥 热门教室预约次数（近30天）', left: 'center' },
+                    tooltip: { trigger: 'axis' },
+                    xAxis: { type: 'category', data: data.data.map(d => `${d.building} ${d.room_name}`), axisLabel: { rotate: 45, interval: 0 } },
+                    yAxis: { type: 'value', name: '预约次数' },
+                    series: [{ type: 'bar', data: data.data.map(d => d.count), itemStyle: { borderRadius: [5,5,0,0], color: '#5470c6' } }]
+                });
+            } else {
+                document.getElementById('classroomChart').innerHTML = '<div style="text-align:center; padding:50px;">暂无教室预约数据</div>';
+            }
+        } catch (err) {
+            console.error(err);
+            document.getElementById('classroomChart').innerHTML = '<div style="text-align:center; padding:50px;">加载失败</div>';
+        }
+    }
+
+    async function loadLibraryStats() {
+        try {
+            const res = await fetch(`${apiBase}/stats/library`);
+            const data = await res.json();
+            if (data.success && data.data.length > 0) {
+                const chart = echarts.init(document.getElementById('libraryChart'));
+                chart.setOption({
+                    title: { text: '📚 图书馆各楼层预约热度', left: 'center' },
+                    tooltip: { trigger: 'axis' },
+                    xAxis: { type: 'category', data: data.data.map(d => `第${d.floor}层`) },
+                    yAxis: { type: 'value', name: '预约次数' },
+                    series: [{ type: 'bar', data: data.data.map(d => d.count), itemStyle: { borderRadius: [5,5,0,0], color: '#fac858' } }]
+                });
+            } else {
+                document.getElementById('libraryChart').innerHTML = '<div style="text-align:center; padding:50px;">暂无图书馆预约数据</div>';
+            }
+        } catch (err) {
+            console.error(err);
+            document.getElementById('libraryChart').innerHTML = '<div style="text-align:center; padding:50px;">加载失败</div>';
+        }
+    }
+
+    async function loadTrendStats() {
+        try {
+            const res = await fetch(`${apiBase}/stats/trend`);
+            const data = await res.json();
+            if (data.success && data.data.length > 0) {
+                const chart = echarts.init(document.getElementById('trendChart'));
+                chart.setOption({
+                    title: { text: '📈 近7天每日预约趋势', left: 'center' },
+                    tooltip: { trigger: 'axis' },
+                    xAxis: { type: 'category', data: data.data.map(d => d.reserve_date) },
+                    yAxis: { type: 'value', name: '预约数量' },
+                    series: [{ type: 'line', data: data.data.map(d => d.count), smooth: true, areaStyle: { opacity: 0.3 }, color: '#ee6666' }]
+                });
+            } else {
+                document.getElementById('trendChart').innerHTML = '<div style="text-align:center; padding:50px;">暂无趋势数据</div>';
+            }
+        } catch (err) {
+            console.error(err);
+            document.getElementById('trendChart').innerHTML = '<div style="text-align:center; padding:50px;">加载失败</div>';
+        }
+    }
+
+    loadClassroomStats();
+    loadLibraryStats();
+    loadTrendStats();
+</script>
+</body>
+</html>

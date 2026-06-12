@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>我的预约记录</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 20px;
+            width: 450px;
+            max-width: 90%;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        .rating-select {
+            display: flex;
+            gap: 12px;
+            margin: 15px 0;
+            justify-content: center;
+        }
+        .star {
+            font-size: 32px;
+            cursor: pointer;
+            color: #ccc;
+            transition: color 0.2s;
+        }
+        .star.selected {
+            color: gold;
+        }
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border-radius: 12px;
+            border: 1px solid #ddd;
+            font-family: inherit;
+            resize: vertical;
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            margin-top: 15px;
+        }
+        button {
+            padding: 8px 20px;
+        }
+        .review-btn {
+            background-color: #ff9800;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+        .review-btn:hover {
+            background-color: #f57c00;
+        }
+        .delete-btn {
+            background-color: #f44336;
+            margin-left: 5px;
+        }
+        .delete-btn:hover {
+            background-color: #d32f2f;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📋 我的预约记录</h1>
+    <div class="nav">
+        <a href="index.html">首页</a>
+        <a href="class_query.html">教室预约</a>
+        <a href="lib_query.html">图书馆预约</a>
+        <a href="stats.html">数据统计</a>
+        <a href="admin.html">管理员</a>
+    </div>
+
+    <div class="form-group">
+        <label>用户ID:</label>
+        <input type="text" id="userId" placeholder="学号/工号" value="20240001">
+        <button id="loadBtn">🔍 查询我的预约</button>
+        <button id="exportMyBtn" style="background-color:#38a169;">📎 导出我的预约</button>
+    </div>
+    <div id="message"></div>
+
+    <table id="recordTable" style="display:none; width:100%;">
+        <thead>
+            <tr><th>类型</th><th>场地名称</th><th>日期</th><th>时间</th><th>状态</th><th>操作</th><th>评价</th></tr>
+        </thead>
+        <tbody id="recordList"></tbody>
+    </table>
+</div>
+
+<!-- 评价弹窗 -->
+<div id="reviewModal" class="modal">
+    <div class="modal-content">
+        <h3>⭐ 评价本次预约</h3>
+        <div class="rating-select" id="ratingStars">
+            <span class="star" data-value="1">★</span>
+            <span class="star" data-value="2">★</span>
+            <span class="star" data-value="3">★</span>
+            <span class="star" data-value="4">★</span>
+            <span class="star" data-value="5">★</span>
+        </div>
+        <textarea id="commentText" rows="3" placeholder="说说你的体验...（选填）"></textarea>
+        <div class="modal-buttons">
+            <button id="submitReviewBtn">✅ 提交</button>
+            <button id="closeModalBtn" style="background:#aaa;">取消</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const apiBase = 'http://localhost:3000/api';
+    let currentRecordId = null;
+    let selectedRating = 0;
+
+    // 显示消息
+    function showMessage(msg, type) {
+        const div = document.getElementById('message');
+        div.innerHTML = msg;
+        div.className = type;
+        if (type !== 'error') {
+            setTimeout(() => { div.innerHTML = ''; }, 3000);
+        }
+    }
+
+    // 加载用户的预约记录
+    async function loadReservations(userId) {
+        try {
+            const res = await fetch(`${apiBase}/reservations?user_id=${userId}`);
+            const data = await res.json();
+            const tbody = document.getElementById('recordList');
+            tbody.innerHTML = '';
+            if (data.success && data.data.length > 0) {
+                document.getElementById('recordTable').style.display = 'table';
+                for (const rec of data.data) {
+                    const row = tbody.insertRow();
+                    // 类型
+                    row.insertCell(0).innerText = rec.type === 'classroom' ? '教室' : '图书馆';
+                    // 场地名称
+                    row.insertCell(1).innerText = rec.target_name;
+                    // 日期
+                    row.insertCell(2).innerText = rec.reserve_date;
+                    // 时间
+                    row.insertCell(3).innerText = rec.start_time.slice(0,5) + '-' + rec.end_time.slice(0,5);
+                    // 状态
+                    row.insertCell(4).innerText = rec.status;
+                    // 操作列（取消/删除）
+                    const actionCell = row.insertCell(5);
+                    if (rec.status === '正常') {
+                        const cancelBtn = document.createElement('button');
+                        cancelBtn.innerText = '取消';
+                        cancelBtn.style.backgroundColor = '#f44336';
+                        cancelBtn.onclick = () => cancelReservation(rec.id, row);
+                        actionCell.appendChild(cancelBtn);
+                    } else if (rec.status === '已取消') {
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.innerText = '删除';
+                        deleteBtn.className = 'delete-btn';
+                        deleteBtn.onclick = () => deleteReservation(rec.id);
+                        actionCell.appendChild(deleteBtn);
+                    } else {
+                        actionCell.innerText = '--';
+                    }
+                    // 评价列
+                    const reviewCell = row.insertCell(6);
+                    const reviewBtn = document.createElement('button');
+                    reviewBtn.innerText = '📝 评价';
+                    reviewBtn.className = 'review-btn';
+                    reviewBtn.onclick = () => openReviewModal(rec.id);
+                    reviewCell.appendChild(reviewBtn);
+                }
+            } else {
+                document.getElementById('recordTable').style.display = 'none';
+                showMessage('暂无预约记录', 'error');
+            }
+        } catch (err) {
+            showMessage('加载失败，请检查网络', 'error');
+            console.error(err);
+        }
+    }
+
+    // 取消预约
+    async function cancelReservation(recordId, rowElement) {
+        if (!confirm('确定取消该预约吗？')) return;
+        try {
+            const res = await fetch(`${apiBase}/cancel`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ record_id: recordId })
+            });
+            const data = await res.json();
+            if (data.success) {
+                showMessage('取消成功', 'success');
+                // 更新当前行状态
+                rowElement.cells[4].innerText = '已取消';
+                // 将操作列改为删除按钮
+                const actionCell = rowElement.cells[5];
+                actionCell.innerHTML = '';
+                const deleteBtn = document.createElement('button');
+                deleteBtn.innerText = '删除';
+                deleteBtn.className = 'delete-btn';
+                deleteBtn.onclick = () => deleteReservation(recordId);
+                actionCell.appendChild(deleteBtn);
+            } else {
+                showMessage(data.error || '取消失败', 'error');
+            }
+        } catch (err) {
+            showMessage('请求失败', 'error');
+        }
+    }
+
+    // 删除已取消的预约（物理删除）
+    async function deleteReservation(recordId) {
+        if (!confirm('确定永久删除这条记录吗？不可恢复。')) return;
+        const userId = document.getElementById('userId').value.trim();
+        try {
+            const res = await fetch(`${apiBase}/reservation/${recordId}?user_id=${userId}`, {
+                method: 'DELETE'
+            });
+            const data = await res.json();
+            if (data.success) {
+                showMessage('删除成功', 'success');
+                // 重新加载列表
+                loadReservations(userId);
+            } else {
+                showMessage(data.error || '删除失败', 'error');
+            }
+        } catch (err) {
+            showMessage('网络错误', 'error');
+        }
+    }
+
+    // 打开评价弹窗
+    function openReviewModal(recordId) {
+        currentRecordId = recordId;
+        document.getElementById('reviewModal').style.display = 'flex';
+        selectedRating = 0;
+        document.querySelectorAll('.star').forEach(star => star.classList.remove('selected'));
+        document.getElementById('commentText').value = '';
+    }
+
+    // 星星点击事件
+    document.querySelectorAll('#ratingStars .star').forEach(star => {
+        star.addEventListener('click', () => {
+            const val = parseInt(star.dataset.value);
+            selectedRating = val;
+            document.querySelectorAll('#ratingStars .star').forEach((s, idx) => {
+                if (idx < val) s.classList.add('selected');
+                else s.classList.remove('selected');
+            });
+        });
+    });
+
+    // 提交评价
+    document.getElementById('submitReviewBtn').onclick = async () => {
+        if (!selectedRating) {
+            alert('请选择评分（1-5星）');
+            return;
+        }
+        const userId = document.getElementById('userId').value.trim();
+        if (!userId) {
+            alert('用户ID不能为空');
+            return;
+        }
+        if (!currentRecordId) {
+            alert('无效的预约记录，请刷新后重试');
+            return;
+        }
+        const comment = document.getElementById('commentText').value;
+        try {
+            const res = await fetch(`${apiBase}/review`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    reserve_record_id: currentRecordId,
+                    user_id: userId,
+                    rating: selectedRating,
+                    comment: comment
+                })
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                alert('评价成功！感谢您的反馈。');
+                document.getElementById('reviewModal').style.display = 'none';
+                // 刷新列表（可选）
+                loadReservations(userId);
+            } else {
+                alert(data.error || '评价失败，请重试');
+            }
+        } catch (err) {
+            alert('网络错误，请检查后端服务');
+            console.error(err);
+        }
+    };
+
+    // 关闭弹窗
+    document.getElementById('closeModalBtn').onclick = () => {
+        document.getElementById('reviewModal').style.display = 'none';
+    };
+    window.onclick = function(event) {
+        const modal = document.getElementById('reviewModal');
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    };
+
+    // 查询按钮
+    document.getElementById('loadBtn').onclick = () => {
+        const userId = document.getElementById('userId').value.trim();
+        if (!userId) {
+            showMessage('请输入用户ID', 'error');
+            return;
+        }
+        loadReservations(userId);
+    };
+
+    // 导出我的预约
+    document.getElementById('exportMyBtn').onclick = () => {
+        const userId = document.getElementById('userId').value.trim();
+        if (!userId) {
+            showMessage('请先输入用户ID', 'error');
+            return;
+        }
+        window.location.href = `${apiBase}/my/export?user_id=${userId}`;
+    };
+
+    // 默认加载（用户ID已预先填写）
+    loadReservations('20240001');
+</script>
+</body>
+</html>
