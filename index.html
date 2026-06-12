@@ -1,61 +1,110 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <title>预约查询首页</title>
-    <link rel="stylesheet" href="/css/style.css">
+  <meta charset="UTF-8">
+  <base href="/bike/">
+  <title>共享单车 - 功能选择</title>
+  <link rel="stylesheet" href="common.css" />
+  <script src="config.js"></script>
 </head>
 <body>
-<div class="container">
-    <h1>校园预约系统</h1>
+  <main class="container site-main">
+    <section class="page-header">
+      <h1 class="page-title">共享单车模块</h1>
+      <p class="page-subtitle">快速访问借车、报修、支付与骑行记录，提升运营效率与用户体验。</p>
+    </section>
 
-    <!-- 公告栏区域 -->
-    <div id="announcement-area" style="background:#f0f7ff; padding:10px; border-radius:8px; margin-bottom:20px;">
-        <h3>📢 最新公告</h3>
-        <div id="announcement-list">加载中...</div>
+    <section class="feature-grid" id="featureGrid">
+      <article class="feature">
+        <div class="feature-icon">🔎</div>
+        <h2>查询单车</h2>
+        <p>查看当前位置的单车列表与可用状态，快速定位最近车辆。</p>
+        <a class="btn btn-primary" href="index.html?view=list">进入查询</a>
+      </article>
+      <article class="feature">
+        <div class="feature-icon">🚲</div>
+        <h2>借车</h2>
+        <p>按用户ID选择可借单车并发起借车操作，流程简洁明了。</p>
+        <a class="btn btn-primary" href="borrow.html">去借车</a>
+      </article>
+      <article class="feature">
+        <div class="feature-icon">📜</div>
+        <h2>我的骑行记录</h2>
+        <p>查看历史骑行记录并快速完成还车与结算。</p>
+        <a class="btn btn-primary" href="record.html">查看记录</a>
+      </article>
+      <article class="feature">
+        <div class="feature-icon">🔧</div>
+        <h2>故障报修</h2>
+        <p>提交故障单并将单车标记为维修，保障车辆状态准确。</p>
+        <a class="btn btn-primary" href="repair.html">报修</a>
+      </article>
+      <article class="feature">
+        <div class="feature-icon">💳</div>
+        <h2>订单支付</h2>
+        <p>查询待支付订单并完成支付，保持骑行账单清晰。</p>
+        <a class="btn btn-primary" href="payment.html">支付订单</a>
+      </article>
+    </section>
+
+    <section class="card" id="bikeQuerySection" style="display:none;">
+      <div class="page-header">
+        <h2 class="page-title">查询单车</h2>
+        <p class="page-subtitle">查看当前位置的单车列表与可用状态，快速定位最近车辆。</p>
+      </div>
+      <div id="bikeList">正在加载车辆列表……</div>
+      <div class="footer">
+        <a class="btn btn-secondary" href="index.html">返回首页</a>
+      </div>
+    </section>
+
+    <div class="footer" id="homeFooter">
+      <small>使用说明：请选择需要的功能进入相应页面。</small>
     </div>
+  </main>
 
-    <div class="nav">
-        <a href="class_query.html">教室查询预约</a>
-        <a href="lib_query.html">图书馆座位查询预约</a>
-        <a href="my_reserve.html">我的预约记录</a>
-        <a href="stats.html">📊 数据统计</a>
-          <a href="admin.html">👑 管理员</a>
-    </div>
-    <p>请选择上方功能模块</p>
-</div>
-
-<script>
-    // 加载公告列表（在首页显示）
-    async function loadAnnouncements() {
-        try {
-            const res = await fetch('http://localhost:3000/api/announcements');
-            const data = await res.json();
-            const container = document.getElementById('announcement-list');
-            if (data.success && data.data.length > 0) {
-                container.innerHTML = '';
-                data.data.forEach(ann => {
-                    const div = document.createElement('div');
-                    div.style.borderBottom = '1px solid #ddd';
-                    div.style.padding = '8px 0';
-                    div.innerHTML = `
-                        <strong>${ann.title}</strong> 
-                        <span style="color:gray; font-size:12px;">${ann.create_time}</span>
-                        <p style="margin:5px 0 0 0; font-size:14px;">${ann.content}</p>
-                    `;
-                    container.appendChild(div);
-                });
-            } else {
-                container.innerHTML = '<p>暂无公告</p>';
-            }
-        } catch (err) {
-            console.error('加载公告失败', err);
-            document.getElementById('announcement-list').innerHTML = '<p style="color:red;">公告加载失败</p>';
-        }
+  <script src="common.js"></script>
+  <script>
+    function parseQueryParams() {
+      return Object.fromEntries(new URLSearchParams(window.location.search));
     }
 
-    // 页面加载时调用
-    loadAnnouncements();
-</script>
+    function renderBikeItem(bike) {
+      return `
+        <div class="bike">
+          <div><strong>单车编号：</strong>${bike.bike_no}</div>
+          <div><strong>停放点位：</strong>${bike.position}</div>
+          <div><span class="tag status-${bike.status}">${bike.status}</span></div>
+        </div>`;
+    }
+
+    async function loadBikeList() {
+      const bikeList = document.getElementById('bikeList');
+      const data = await apiGet('list_bikes');
+      if (!data.success) {
+        bikeList.innerHTML = `<div class="list-empty">加载失败：${data.message}</div>`;
+        return;
+      }
+      if (!data.bikes.length) {
+        bikeList.innerHTML = '<div class="list-empty">当前暂无单车数据。</div>';
+        return;
+      }
+      bikeList.innerHTML = data.bikes.map(renderBikeItem).join('');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const params = parseQueryParams();
+      const querySection = document.getElementById('bikeQuerySection');
+      const featureGrid = document.getElementById('featureGrid');
+      const homeFooter = document.getElementById('homeFooter');
+
+      if (params.view === 'list') {
+        featureGrid.style.display = 'none';
+        homeFooter.style.display = 'none';
+        querySection.style.display = 'block';
+        loadBikeList();
+      }
+    });
+  </script>
 </body>
 </html>
