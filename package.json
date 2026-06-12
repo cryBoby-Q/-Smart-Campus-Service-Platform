@@ -1,0 +1,13 @@
+{
+  "name": "campus-bike-api",
+  "version": "1.0.0",
+  "description": "Node.js backend for campus shared bike module",
+  "main": "bike_api.js",
+  "scripts": {
+    "start": "node bike_api.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "mysql2": "^3.6.0"
+  }
+}
