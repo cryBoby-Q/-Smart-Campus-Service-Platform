@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>教室查询预约</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        /* 评价弹窗样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            width: 550px;
+            max-width: 90%;
+            padding: 20px;
+            border-radius: 20px;
+            max-height: 80%;
+            overflow-y: auto;
+        }
+        .review-item {
+            border-bottom: 1px solid #eee;
+            padding: 12px 0;
+        }
+        .review-stars {
+            color: #ff9800;
+            font-size: 1.1rem;
+        }
+        .review-user {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .review-time {
+            color: #888;
+            font-size: 0.8rem;
+        }
+        .average-rating {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .close-btn {
+            background: #aaa;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>教室查询预约</h1>
+    <div class="nav">
+        <a href="index.html">首页</a>
+        <a href="lib_query.html">图书馆预约</a>
+        <a href="my_reserve.html">我的预约</a>
+        <a href="stats.html">数据统计</a>
+
+        <a href="admin.html">管理员</a>
+    </div>
+
+    <div class="form-group">
+        <label>用户ID:</label>
+        <input type="text" id="userId" placeholder="请输入学号/工号" value="20240001">
+    </div>
+    <div class="form-group">
+        <label>日期:</label>
+        <input type="date" id="date">
+    </div>
+    <div class="form-group">
+        <label>开始时间:</label>
+        <input type="time" id="startTime" step="1">
+    </div>
+    <div class="form-group">
+        <label>结束时间:</label>
+        <input type="time" id="endTime" step="1">
+    </div>
+    <button id="queryBtn">查询空闲教室</button>
+    <div id="message"></div>
+
+    <table id="roomTable" style="display:none;">
+        <thead>
+            <tr><th>楼栋</th><th>教室名</th><th>容量</th><th>操作</th></tr>
+        </thead>
+        <tbody id="roomList"></tbody>
+    </table>
+</div>
+
+<!-- 评价弹窗 -->
+<div id="reviewsModal" class="modal">
+    <div class="modal-content">
+        <h3 id="reviewModalTitle">教室评价</h3>
+        <div class="average-rating">
+            <strong>平均评分：</strong><span id="avgRating">--</span> / 5
+        </div>
+        <div id="reviewList">
+            <p>加载中...</p>
+        </div>
+        <button id="closeReviewsBtn" class="close-btn">关闭</button>
+    </div>
+</div>
+
+<script>
+    const apiBase = 'http://localhost:3000/api';
+
+    // 设置默认日期为明天
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    document.getElementById('date').valueAsDate = tomorrow;
+
+    // 通用消息提示
+    function showMessage(msg, type) {
+        const div = document.getElementById('message');
+        div.innerHTML = msg;
+        div.className = type;
+        if (type !== 'error') {
+            setTimeout(() => { div.innerHTML = ''; }, 3000);
+        }
+    }
+
+    // 查询空闲教室
+    document.getElementById('queryBtn').addEventListener('click', async () => {
+        const date = document.getElementById('date').value;
+        let startTime = document.getElementById('startTime').value;
+        let endTime = document.getElementById('endTime').value;
+        if (!date || !startTime || !endTime) {
+            showMessage('请完整填写日期和时间段', 'error');
+            return;
+        }
+        if (startTime.length === 5) startTime += ':00';
+        if (endTime.length === 5) endTime += ':00';
+
+        try {
+            const res = await fetch(`${apiBase}/rooms?date=${date}&start_time=${startTime}&end_time=${endTime}`);
+            const data = await res.json();
+            if (data.success) {
+                const tbody = document.getElementById('roomList');
+                tbody.innerHTML = '';
+                if (data.data.length === 0) {
+                    showMessage('没有找到空闲教室', 'error');
+                    document.getElementById('roomTable').style.display = 'none';
+                } else {
+                    data.data.forEach(room => {
+                        const row = tbody.insertRow();
+                        row.insertCell(0).innerText = room.building;
+                        row.insertCell(1).innerText = room.room_name;
+                        row.insertCell(2).innerText = room.capacity;
+                        // 操作列：预约按钮 + 查看评价按钮
+                        const btnCell = row.insertCell(3);
+                        const reserveBtn = document.createElement('button');
+                        reserveBtn.innerText = '预约';
+                        reserveBtn.onclick = () => reserveRoom(room.id, room.building + room.room_name);
+                        btnCell.appendChild(reserveBtn);
+                        const reviewBtn = document.createElement('button');
+                        reviewBtn.innerText = '查看评价';
+                        reviewBtn.style.marginLeft = '8px';
+                        reviewBtn.style.backgroundColor = '#ff9800';
+                        reviewBtn.onclick = () => showReviews('classroom', room.id, `${room.building} ${room.room_name}`);
+                        btnCell.appendChild(reviewBtn);
+                    });
+                    document.getElementById('roomTable').style.display = 'table';
+                    showMessage('', '');
+                }
+            } else {
+                showMessage('查询失败', 'error');
+            }
+        } catch (err) {
+            showMessage('网络错误', 'error');
+            console.error(err);
+        }
+    });
+
+    // 预约教室
+    async function reserveRoom(roomId, roomName) {
+        const userId = document.getElementById('userId').value.trim();
+        if (!userId) {
+            showMessage('请填写用户ID', 'error');
+            return;
+        }
+        const date = document.getElementById('date').value;
+        let startTime = document.getElementById('startTime').value;
+        let endTime = document.getElementById('endTime').value;
+        if (!date || !startTime || !endTime) {
+            showMessage('请先查询空闲教室并确认时间段', 'error');
+            return;
+        }
+        if (startTime.length === 5) startTime += ':00';
+        if (endTime.length === 5) endTime += ':00';
+
+        const payload = {
+            user_id: userId,
+            type: 'classroom',
+            target_id: roomId,
+            reserve_date: date,
+            start_time: startTime,
+            end_time: endTime
+        };
+        try {
+            const res = await fetch(`${apiBase}/reserve`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const result = await res.json();
+            if (res.ok && result.success) {
+                showMessage(`预约教室 ${roomName} 成功！`, 'success');
+                // 自动刷新空闲教室列表
+                document.getElementById('queryBtn').click();
+            } else {
+                showMessage(result.error || '预约失败', 'error');
+            }
+        } catch (err) {
+            showMessage('请求失败', 'error');
+            console.error(err);
+        }
+    }
+
+    // 查看评价（弹窗）
+    async function showReviews(type, targetId, targetName) {
+        const modal = document.getElementById('reviewsModal');
+        const titleSpan = document.getElementById('reviewModalTitle');
+        const avgSpan = document.getElementById('avgRating');
+        const reviewListDiv = document.getElementById('reviewList');
+        titleSpan.innerText = `${targetName} 的评价`;
+        reviewListDiv.innerHTML = '<p>加载中...</p>';
+        modal.style.display = 'flex';
+        try {
+            const res = await fetch(`${apiBase}/reviews/${type}/${targetId}`);
+            const data = await res.json();
+            if (data.success) {
+                // 显示平均分
+                const avg = data.average_rating ? parseFloat(data.average_rating).toFixed(1) : '暂无';
+                avgSpan.innerText = avg;
+                // 显示评论列表
+                if (!data.reviews || data.reviews.length === 0) {
+                    reviewListDiv.innerHTML = '<p>暂无评价</p>';
+                } else {
+                    let html = '';
+                    data.reviews.forEach(r => {
+                        const stars = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
+                        html += `
+                            <div class="review-item">
+                                <div class="review-user">${escapeHtml(r.user_id)}</div>
+                                <div class="review-stars">${stars}</div>
+                                <div class="review-comment">${escapeHtml(r.comment || '无文字评论')}</div>
+                                <div class="review-time">${r.created_at ? r.created_at.slice(0,16) : ''}</div>
+                            </div>
+                        `;
+                    });
+                    reviewListDiv.innerHTML = html;
+                }
+            } else {
+                reviewListDiv.innerHTML = '<p>加载失败</p>';
+            }
+        } catch (err) {
+            reviewListDiv.innerHTML = '<p>网络错误</p>';
+            console.error(err);
+        }
+    }
+
+    // 简单的防XSS辅助函数
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+            return c;
+        });
+    }
+
+    // 关闭弹窗
+    document.getElementById('closeReviewsBtn').onclick = () => {
+        document.getElementById('reviewsModal').style.display = 'none';
+    };
+    // 点击模态背景关闭
+    window.onclick = function(event) {
+        const modal = document.getElementById('reviewsModal');
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    };
+</script>
+</body>
+</html>

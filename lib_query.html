@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>图书馆座位预约</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="container">
+    <h1>图书馆座位查询预约</h1>
+    <div class="nav">
+        <a href="index.html">首页</a>
+        <a href="class_query.html">教室预约</a>
+        <a href="my_reserve.html">我的预约</a>
+    </div>
+
+    <div class="form-group">
+        <label>用户ID:</label>
+        <input type="text" id="userId" value="20240001">
+    </div>
+    <div class="form-group">
+        <label>日期:</label>
+        <input type="date" id="date">
+    </div>
+    <div class="form-group">
+        <label>开始时间:</label>
+        <input type="time" id="startTime" step="1">
+    </div>
+    <div class="form-group">
+        <label>结束时间:</label>
+        <input type="time" id="endTime" step="1">
+    </div>
+    <button id="queryBtn">查询空闲座位</button>
+    <div id="message"></div>
+
+    <table id="seatTable" style="display:none;">
+        <thead><tr><th>楼层</th><th>座位号</th><th>操作</th></tr></thead>
+        <tbody id="seatList"></tbody>
+    </table>
+</div>
+
+<script>
+    const apiBase = 'http://localhost:3000/api';
+
+    // 设置默认日期为明天
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    document.getElementById('date').valueAsDate = tomorrow;
+
+    document.getElementById('queryBtn').addEventListener('click', async () => {
+        const date = document.getElementById('date').value;
+        let startTime = document.getElementById('startTime').value;
+        let endTime = document.getElementById('endTime').value;
+        if (!date || !startTime || !endTime) {
+            showMessage('请完整填写信息', 'error');
+            return;
+        }
+        // 补全秒数
+        if (startTime.length === 5) startTime += ':00';
+        if (endTime.length === 5) endTime += ':00';
+
+        try {
+            const res = await fetch(`${apiBase}/seats?date=${date}&start_time=${startTime}&end_time=${endTime}`);
+            const data = await res.json();
+            if (data.success) {
+                const tbody = document.getElementById('seatList');
+                tbody.innerHTML = '';
+                if (data.data.length === 0) {
+                    showMessage('没有空闲座位', 'error');
+                    document.getElementById('seatTable').style.display = 'none';
+                } else {
+                    data.data.forEach(seat => {
+                        const row = tbody.insertRow();
+                        row.insertCell(0).innerText = seat.floor;
+                        row.insertCell(1).innerText = seat.seat_no;
+                        const btn = document.createElement('button');
+                        btn.innerText = '预约';
+                        btn.onclick = () => reserveSeat(seat.id, `${seat.floor}楼-${seat.seat_no}`);
+                        row.insertCell(2).appendChild(btn);
+                    });
+                    document.getElementById('seatTable').style.display = 'table';
+                    showMessage('', '');
+                }
+            } else {
+                showMessage('查询失败: ' + (data.error || '未知错误'), 'error');
+                document.getElementById('seatTable').style.display = 'none';
+            }
+        } catch (err) {
+            showMessage('网络错误或服务器异常', 'error');
+            console.error(err);
+            document.getElementById('seatTable').style.display = 'none';
+        }
+    });
+
+    async function reserveSeat(seatId, seatName) {
+        const userId = document.getElementById('userId').value.trim();
+        if (!userId) {
+            showMessage('请填写用户ID', 'error');
+            return;
+        }
+        const date = document.getElementById('date').value;
+        let startTime = document.getElementById('startTime').value;
+        let endTime = document.getElementById('endTime').value;
+        if (!date || !startTime || !endTime) {
+            showMessage('请先查询空闲座位并确认时间段', 'error');
+            return;
+        }
+        // 补全秒数
+        if (startTime.length === 5) startTime += ':00';
+        if (endTime.length === 5) endTime += ':00';
+
+        const payload = {
+            user_id: userId,
+            type: 'library',
+            target_id: seatId,
+            reserve_date: date,
+            start_time: startTime,
+            end_time: endTime
+        };
+        try {
+            const res = await fetch(`${apiBase}/reserve`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const result = await res.json();
+            if (res.ok && result.success) {
+                showMessage(`预约座位 ${seatName} 成功！`, 'success');
+                // 可选：自动刷新座位列表
+                setTimeout(() => document.getElementById('queryBtn').click(), 1000);
+            } else {
+                showMessage(result.error || '预约失败', 'error');
+            }
+        } catch (err) {
+            showMessage('请求失败，请检查后端服务', 'error');
+            console.error(err);
+        }
+    }
+
+    function showMessage(msg, type) {
+        const div = document.getElementById('message');
+        div.innerHTML = msg;
+        div.className = type;
+        if (type !== 'error') {
+            setTimeout(() => { div.innerHTML = ''; }, 3000);
+        }
+    }
+</script>
+</body>
+</html>
