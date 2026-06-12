@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商品详情 - 校园二手交易</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background-color: #f5f5f5;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .nav {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        .nav a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 20px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.2);
+            transition: all 0.3s;
+        }
+        .nav a:hover {
+            background: white;
+            color: #667eea;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+        .goods-card {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .goods-header {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+        .goods-img {
+            width: 200px;
+            height: 200px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e0e7ff 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 80px;
+            flex-shrink: 0;
+        }
+        .goods-info {
+            flex: 1;
+        }
+        .goods-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        .goods-type {
+            display: inline-block;
+            padding: 5px 15px;
+            background: #e3f2fd;
+            color: #1976d2;
+            border-radius: 15px;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        .goods-price {
+            font-size: 36px;
+            color: #f44336;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .goods-meta {
+            color: #999;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        .goods-content {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        .goods-content h3 {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .goods-content p {
+            color: #666;
+            line-height: 1.8;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-buy {
+            background: #ff9800;
+            color: white;
+        }
+        .btn-collect {
+            background: #fff3e0;
+            color: #f57c00;
+            border: 1px solid #ffb74d;
+        }
+        .btn-collect.active {
+            background: #f57c00;
+            color: white;
+        }
+        .btn-back {
+            background: #f5f5f5;
+            color: #666;
+        }
+        .msg-section {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .msg-list {
+            margin-bottom: 30px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .msg-item {
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .msg-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .msg-user {
+            font-weight: bold;
+            color: #667eea;
+        }
+        .msg-time {
+            color: #999;
+            font-size: 12px;
+        }
+        .msg-content {
+            color: #666;
+            line-height: 1.6;
+        }
+        .msg-input-area {
+            display: flex;
+            gap: 15px;
+        }
+        .msg-input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .empty-msg {
+            text-align: center;
+            padding: 30px;
+            color: #999;
+        }
+        .tip {
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            display: none;
+        }
+        .tip.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            display: block;
+        }
+        .tip.error {
+            background: #ffebee;
+            color: #c62828;
+            display: block;
+        }
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #667eea;
+        }
+        @media (max-width: 700px) {
+            .goods-header { flex-direction: column; align-items: center; }
+            .goods-img { width: 100%; max-width: 200px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎓 校园二手交易平台</h1>
+        <div class="nav">
+            <a href="/second/index.html">首页</a>
+            <a href="/second/publish.html">发布闲置</a>
+            <a href="/second/my_publish.html">我的发布</a>
+            <a href="/second/my_collect.html">我的收藏</a>
+            <a href="/second/my_order.html">我的订单</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="goods-card" id="goodsCard">
+            <div class="loading">⏳ 加载商品信息...</div>
+        </div>
+        <div class="msg-section">
+            <h3>💬 留言咨询</h3>
+            <div id="tip" class="tip"></div>
+            <div id="msgList" class="msg-list">
+                <div class="loading">⏳ 加载留言...</div>
+            </div>
+            <div class="msg-input-area">
+                <input type="text" class="msg-input" id="msgInput" placeholder="输入您的咨询内容...">
+                <button class="btn btn-primary" onclick="sendMsg()">发送</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const currentUserId = 1;
+        const API_BASE = 'http://localhost:3000';
+        let goodsId = null;
+        let currentGoods = null;
+
+        function showTip(msg, type) {
+            const tip = document.getElementById('tip');
+            tip.textContent = type === 'success' ? '✅ ' + msg : '❌ ' + msg;
+            tip.className = 'tip ' + type;
+            setTimeout(() => {
+                tip.style.display = 'none';
+            }, 3000);
+        }
+
+        function getQueryParam(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        window.onload = function() {
+            goodsId = parseInt(getQueryParam('id'));
+            if (!goodsId) {
+                showTip('参数错误', 'error');
+                setTimeout(() => {
+                    window.location.href = '/second/index.html';
+                }, 1500);
+                return;
+            }
+            loadGoodsDetail();
+            loadMsgList();
+        };
+
+        function loadGoodsDetail() {
+            fetch(`${API_BASE}/api/goods/detail?id=${goodsId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.data) {
+                        currentGoods = data.data;
+                        renderGoodsDetail();
+                        checkCollectStatus();
+                    } else {
+                        document.getElementById('goodsCard').innerHTML = '<div class="loading">❌ 商品不存在</div>';
+                        setTimeout(() => {
+                            window.location.href = '/second/index.html';
+                        }, 2000);
+                    }
+                })
+                .catch(err => {
+                    document.getElementById('goodsCard').innerHTML = '<div class="loading">❌ 加载失败</div>';
+                });
+        }
+
+        function checkCollectStatus() {
+            fetch(`${API_BASE}/api/collect/check?user_id=${currentUserId}&goods_id=${goodsId}`)
+                .then(res => res.json())
+                .then(data => {
+                    updateCollectBtn(data.data);
+                });
+        }
+
+        function updateCollectBtn(isCollected) {
+            const btn = document.getElementById('collectBtn');
+            if (btn) {
+                if (isCollected) {
+                    btn.classList.add('active');
+                    btn.innerHTML = '❤️ 已收藏';
+                } else {
+                    btn.classList.remove('active');
+                    btn.innerHTML = '🤍 收藏';
+                }
+            }
+        }
+
+        function toggleCollect() {
+            const btn = document.getElementById('collectBtn');
+            const isActive = btn.classList.contains('active');
+            
+            const url = isActive ? `${API_BASE}/api/collect/cancel` : `${API_BASE}/api/collect/add`;
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: currentUserId, goods_id: goodsId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showTip(isActive ? '已取消收藏' : '收藏成功', 'success');
+                    updateCollectBtn(!isActive);
+                }
+            });
+        }
+
+        function addToCart() {
+            fetch(`${API_BASE}/api/cart/add`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: currentUserId, goods_id: goodsId, quantity: 1 })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showTip(`已添加 ${currentGoods.title} 到购物车`, 'success');
+                } else {
+                    showTip('添加失败', 'error');
+                }
+            });
+        }
+
+        function buyNow() {
+            addToCart();
+            showTip('已添加到购物车，点击右下角购物车结算', 'success');
+        }
+
+        function renderGoodsDetail() {
+            document.getElementById('goodsCard').innerHTML = `
+                <div class="goods-header">
+                    <div class="goods-img">
+                        <span style="font-size:80px;">${currentGoods.img || '📦'}</span>
+                    </div>
+                    <div class="goods-info">
+                        <h1 class="goods-title">${escapeHtml(currentGoods.title)}</h1>
+                        <span class="goods-type">${currentGoods.type}</span>
+                        <div class="goods-price">¥${currentGoods.price}</div>
+                        <div class="goods-meta">📅 发布时间：${currentGoods.create_time}</div>
+                        <div class="goods-meta">📊 状态：${currentGoods.status}</div>
+                        <div class="action-buttons">
+                            <button class="btn btn-back" onclick="goBack()">← 返回列表</button>
+                            <button class="btn btn-buy" onclick="buyNow()">🛒 立即购买</button>
+                            <button class="btn btn-collect" id="collectBtn" onclick="toggleCollect()">🤍 收藏</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="goods-content">
+                    <h3>📝 商品描述</h3>
+                    <p>${escapeHtml(currentGoods.content || '暂无描述')}</p>
+                </div>
+            `;
+        }
+
+        function loadMsgList() {
+            fetch(`${API_BASE}/api/msg/list?goods_id=${goodsId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        renderMsgList(data.data);
+                    }
+                });
+        }
+
+        function renderMsgList(msgs) {
+            const container = document.getElementById('msgList');
+            if (!msgs || msgs.length === 0) {
+                container.innerHTML = '<div class="empty-msg">暂无留言，快来抢沙发吧~</div>';
+                return;
+            }
+            container.innerHTML = msgs.map(msg => `
+                <div class="msg-item">
+                    <div class="msg-header">
+                        <span class="msg-user">👤 用户${msg.from_user_id}</span>
+                        <span class="msg-time">${msg.msg_time}</span>
+                    </div>
+                    <div class="msg-content">${escapeHtml(msg.content)}</div>
+                </div>
+            `).join('');
+        }
+
+        function sendMsg() {
+            const content = document.getElementById('msgInput').value.trim();
+            if (!content) {
+                showTip('请输入留言内容', 'error');
+                return;
+            }
+
+            fetch(`${API_BASE}/api/msg/send`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    goods_id: goodsId,
+                    from_user_id: currentUserId,
+                    content: content
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('msgInput').value = '';
+                    loadMsgList();
+                    showTip('留言发送成功！', 'success');
+                } else {
+                    showTip('发送失败', 'error');
+                }
+            });
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function goBack() {
+            window.location.href = '/second/index.html';
+        }
+
+        document.getElementById('msgInput')?.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') sendMsg();
+        });
+    </script>
+</body>
+</html>
