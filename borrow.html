@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <base href="/bike/">
+  <title>借车</title>
+  <link rel="stylesheet" href="common.css" />
+  <script src="config.js"></script>
+</head>
+<body>
+  <main class="container site-main">
+    <section class="page-header">
+      <h1 class="page-title">借车</h1>
+      <p class="page-subtitle">输入用户ID并选择可借单车，完成轻量借车流程。</p>
+    </section>
+
+    <section class="card">
+      <div class="form-grid">
+        <div>
+          <label for="userId">用户ID</label>
+          <input id="userId" type="number" value="1" min="1" />
+        </div>
+        <div>
+          <label for="bikeId">选择可借用单车</label>
+          <select id="bikeId"></select>
+        </div>
+        <div></div>
+        <button class="btn btn-primary" onclick="borrowBike()">立即借车</button>
+      </div>
+      <div id="message" class="message-box"></div>
+    </section>
+
+    <section class="card">
+      <h2>可借用单车列表</h2>
+      <div id="bikeList"></div>
+    </section>
+
+    <div class="footer">
+      <a href="index.html">返回首页</a>
+      <a href="record.html">我的骑行记录</a>
+      <a href="repair.html">故障报修</a>
+      <a href="payment.html">订单支付</a>
+    </div>
+  </main>
+
+  <script src="common.js"></script>
+  <script>
+    async function loadAvailableBikes() {
+      const select = document.getElementById('bikeId');
+      const list = document.getElementById('bikeList');
+      try {
+        const data = await apiGet('list_bikes');
+        if (!data.success) {
+          select.innerHTML = '<option value="">加载失败</option>';
+          list.innerHTML = `<p class="message-error">加载失败：${data.message}</p>`;
+          return;
+        }
+
+        const available = data.bikes.filter(b => String(b.status || '').trim() === '可借用');
+        select.innerHTML = available.length
+          ? available.map(b => `<option value="${b.id}">${b.bike_no} - ${b.position}</option>`).join('')
+          : '<option value="">暂无可借用单车</option>';
+        select.disabled = !available.length;
+        list.innerHTML = available.length
+          ? available.map(b => `<div class="bike"><strong>${b.bike_no}</strong><div>${b.position}</div></div>`).join('')
+          : '<div class="list-empty">当前无可借用单车。</div>';
+
+        if (!available.length && data.bikes.length) {
+          const allList = data.bikes.map(b => `<div class="bike"><strong>${b.bike_no}</strong><div>${b.position} / 状态：${b.status}</div></div>`).join('');
+          list.innerHTML += `<div class="list-note">以下为全部单车状态：</div>${allList}`;
+        }
+      } catch (error) {
+        select.innerHTML = '<option value="">加载失败</option>';
+        list.innerHTML = `<p class="message-error">请求失败：${error.message || '无法连接到服务器'}</p>`;
+      }
+    }
+    async function borrowBike() {
+      const userId = document.getElementById('userId').value.trim();
+      const bikeId = document.getElementById('bikeId').value;
+      if (!userId || !bikeId) {
+        showMessage('message', '请填写用户ID并选择单车。', false);
+        return;
+      }
+      try {
+        const data = await apiPost('borrow_bike', { user_id: userId, bike_id: bikeId });
+        showMessage('message', data.message, data.success);
+        if (data.success) {
+          loadAvailableBikes();
+        }
+      } catch (error) {
+        showMessage('message', `借车请求失败：${error.message || '请检查网络或接口配置'}`, false);
+      }
+    }
+    loadAvailableBikes();
+  </script>
+</body>
+</html>

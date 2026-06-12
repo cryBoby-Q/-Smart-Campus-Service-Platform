@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <base href="/bike/">
+  <title>骑行订单支付</title>
+  <link rel="stylesheet" href="common.css" />
+  <script src="config.js"></script>
+</head>
+<body>
+  <main class="container site-main">
+    <section class="page-header">
+      <h1 class="page-title">骑行订单支付</h1>
+      <p class="page-subtitle">查询并支付未结算订单，保持账单清晰和骑行优先权。</p>
+    </section>
+
+    <section class="card">
+      <div class="form-grid">
+        <div>
+          <label for="userId">用户ID</label>
+          <input id="userId" type="number" value="1" min="1" />
+        </div>
+        <div></div>
+        <button class="btn btn-primary" onclick="loadOrders()">查询订单</button>
+      </div>
+      <div id="message" class="message-box"></div>
+    </section>
+
+    <section class="card">
+      <h2>待支付订单</h2>
+      <div id="orderList">请输入用户ID后查询订单。</div>
+    </section>
+
+    <div class="footer">
+      <a href="index.html">返回首页</a>
+      <a href="borrow.html">借车页面</a>
+      <a href="record.html">我的骑行记录</a>
+      <a href="repair.html">故障报修</a>
+    </div>
+  </main>
+
+  <script src="common.js"></script>
+  <script>
+    function buildOrderItem(order) {
+      const statusTag = order.payment_status === '已支付' ? 'badge-returned' : 'badge-active';
+      return `
+        <div class="record">
+          <div class="record-header">
+            <div>
+              <div><strong>订单ID：</strong>${order.id}</div>
+              <div><strong>单车：</strong>${order.bike_no}</div>
+            </div>
+            <div class="badge ${statusTag}">${order.payment_status}</div>
+          </div>
+          <div class="record-grid">
+            <div><span class="record-label">点位</span><div>${order.position}</div></div>
+            <div><span class="record-label">借出</span><div>${order.borrow_time}</div></div>
+            <div><span class="record-label">归还</span><div>${order.return_time || '未结束'}</div></div>
+            <div><span class="record-label">时长</span><div>${order.duration !== null ? order.duration + ' 分钟' : '待结算'}</div></div>
+            <div><span class="record-label">金额</span><div>¥${Number(order.payment_amount).toFixed(2)}</div></div>
+          </div>
+          ${order.payment_status === '未支付' ? `<div class="action-row"><button class="btn btn-primary action-btn" onclick="payOrder(${order.id})">立即支付</button></div>` : ''}
+        </div>`;
+    }
+
+    async function loadOrders() {
+      const userId = document.getElementById('userId').value.trim();
+      const orderList = document.getElementById('orderList');
+      if (!userId) {
+        showMessage('message', '请输入用户ID。', false);
+        return;
+      }
+      showMessage('message', '', true);
+      const data = await apiGet('list_orders', { user_id: userId });
+      if (!data.success) {
+        orderList.innerHTML = `<div class="list-empty">查询失败：${data.message}</div>`;
+        return;
+      }
+      if (!data.orders.length) {
+        orderList.innerHTML = '<div class="list-empty">暂无可支付订单。</div>';
+        return;
+      }
+      orderList.innerHTML = data.orders.map(buildOrderItem).join('');
+    }
+
+    async function payOrder(orderId) {
+      const data = await apiPost('pay_order', { record_id: orderId });
+      showMessage('message', data.message, data.success);
+      if (data.success) {
+        loadOrders();
+      }
+    }
+
+    loadOrders();
+  </script>
+</body>
+</html>

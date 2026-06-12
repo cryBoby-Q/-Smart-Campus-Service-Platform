@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <base href="/bike/">
+  <title>我的骑行记录</title>
+  <link rel="stylesheet" href="common.css" />
+  <script src="config.js"></script>
+</head>
+<body>
+  <main class="container site-main">
+    <section class="page-header">
+      <h1 class="page-title">我的骑行记录</h1>
+      <p class="page-subtitle">查询历史骑行记录、查看状态并快速完成还车操作。</p>
+    </section>
+
+    <section class="card">
+      <div class="form-grid">
+        <div>
+          <label for="userId">用户ID</label>
+          <input id="userId" type="number" value="1" min="1" />
+        </div>
+        <div></div>
+        <button class="btn btn-primary" onclick="loadRecords()">查询记录</button>
+      </div>
+      <div id="message" class="message-box"></div>
+    </section>
+
+    <section class="card">
+      <div id="recordList"></div>
+    </section>
+
+    <div class="footer">
+      <a href="index.html">返回首页</a>
+      <a href="borrow.html">借车页面</a>
+      <a href="repair.html">故障报修</a>
+      <a href="payment.html">订单支付</a>
+    </div>
+  </main>
+
+  <script src="common.js"></script>
+  <script>
+    async function loadRecords() {
+      const userId = document.getElementById('userId').value.trim();
+      const recordList = document.getElementById('recordList');
+      if (!userId) {
+        showMessage('message', '请输入用户ID。', false);
+        return;
+      }
+      showMessage('message', '', true);
+      const data = await apiGet('list_records', { user_id: userId });
+      if (!data.success) {
+        recordList.innerHTML = `<div class="list-empty">查询失败：${data.message}</div>`;
+        return;
+      }
+      if (!data.records.length) {
+        recordList.innerHTML = '<div class="list-empty">暂无骑行记录。</div>';
+        return;
+      }
+      recordList.innerHTML = data.records.map(formatRecord).join('');
+    }
+    async function returnBike(recordId) {
+      const data = await apiPost('return_bike', { record_id: recordId });
+      showMessage('message', data.message, data.success);
+      if (data.success) {
+        loadRecords();
+      }
+    }
+    loadRecords();
+  </script>
+</body>
+</html>
