@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>发布闲置 - 校园二手交易</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background-color: #f5f5f5;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .nav {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        .nav a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 20px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.2);
+            transition: all 0.3s;
+        }
+        .nav a:hover, .nav a.active {
+            background: white;
+            color: #667eea;
+        }
+        .container {
+            max-width: 800px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+        .form-card {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .form-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 25px;
+        }
+        .form-label {
+            display: block;
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        .form-label span {
+            color: #f44336;
+        }
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .form-textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        .icon-preview {
+            background: #f0f0f0;
+            padding: 20px;
+            text-align: center;
+            border-radius: 10px;
+        }
+        .icon-preview span {
+            font-size: 60px;
+        }
+        .emoji-hint {
+            color: #999;
+            font-size: 12px;
+            margin-top: 5px;
+            text-align: center;
+        }
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        .btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102,126,234,0.4);
+        }
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #666;
+        }
+        .tip {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 15px 30px;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            z-index: 9999;
+            display: none;
+        }
+        .tip.success {
+            background: #4caf50;
+            display: block;
+        }
+        .tip.error {
+            background: #f44336;
+            display: block;
+        }
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid white;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 0.6s linear infinite;
+            margin-left: 10px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎓 校园二手交易平台</h1>
+        <div class="nav">
+            <a href="/second/index.html">首页</a>
+            <a href="/second/publish.html" class="active">发布闲置</a>
+            <a href="/second/my_publish.html">我的发布</a>
+            <a href="/second/my_collect.html">我的收藏</a>
+            <a href="/second/my_order.html">我的订单</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="form-card">
+            <h2 class="form-title">📝 发布闲置物品</h2>
+
+            <form id="publishForm">
+                <div class="form-group">
+                    <label class="form-label">商品标题 <span>*</span></label>
+                    <input type="text" class="form-input" id="title" placeholder="请输入商品标题" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">商品分类 <span>*</span></label>
+                    <select class="form-select" id="type" required onchange="updateEmojiPreview()">
+                        <option value="">请选择分类</option>
+                        <option value="二手书">📖 二手书</option>
+                        <option value="电子产品">💻 电子产品</option>
+                        <option value="生活用品">🛋️ 生活用品</option>
+                        <option value="体育用品">⚽ 体育用品</option>
+                        <option value="服饰鞋包">👔 服饰鞋包</option>
+                        <option value="其他">🎁 其他</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">商品价格 <span>*</span></label>
+                    <input type="number" class="form-input" id="price" placeholder="0.00" step="0.01" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">商品描述</label>
+                    <textarea class="form-textarea" id="content" placeholder="请详细描述商品情况、成色、使用说明等..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">商品图标</label>
+                    <div class="icon-preview" id="iconPreview">
+                        <span>📦</span>
+                    </div>
+                    <div class="emoji-hint">✅ 根据选择的分类自动匹配图标，无需上传图片</div>
+                </div>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-secondary" onclick="resetForm()">重置</button>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">立即发布</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="tip" class="tip"></div>
+
+    <script>
+        const currentUserId = 1;
+        const API_BASE = 'http://localhost:3000';
+
+        function getTypeEmoji(type) {
+            const emojis = {
+                '二手书': '📖',
+                '电子产品': '💻',
+                '生活用品': '🛋️',
+                '体育用品': '⚽',
+                '服饰鞋包': '👔',
+                '其他': '🎁'
+            };
+            return emojis[type] || '📦';
+        }
+
+        function updateEmojiPreview() {
+            const type = document.getElementById('type').value;
+            const emoji = getTypeEmoji(type);
+            document.getElementById('iconPreview').innerHTML = '<span style="font-size:60px;">' + emoji + '</span>';
+        }
+
+        function showTip(msg, type) {
+            const tip = document.getElementById('tip');
+            tip.textContent = type === 'success' ? '✅ ' + msg : '❌ ' + msg;
+            tip.className = 'tip ' + type;
+            setTimeout(function() {
+                tip.style.display = 'none';
+            }, 2000);
+        }
+
+        function setLoading(isLoading) {
+            const btn = document.getElementById('submitBtn');
+            if (isLoading) {
+                btn.innerHTML = '发布中... <span class="loading"></span>';
+                btn.disabled = true;
+            } else {
+                btn.innerHTML = '立即发布';
+                btn.disabled = false;
+            }
+        }
+
+        document.getElementById('publishForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const title = document.getElementById('title').value.trim();
+            const type = document.getElementById('type').value;
+            const price = parseFloat(document.getElementById('price').value);
+            const content = document.getElementById('content').value;
+
+            if (!title || !type || isNaN(price) || price <= 0) {
+                showTip('请填写完整的商品信息（标题、分类、价格）', 'error');
+                return;
+            }
+
+            setLoading(true);
+
+            const imgEmoji = getTypeEmoji(type);
+
+            const data = {
+                user_id: currentUserId,
+                title: title,
+                type: type,
+                price: price,
+                content: content,
+                img: imgEmoji,
+                status: '上架'
+            };
+
+            fetch(API_BASE + '/api/goods/publish', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(function(res) {
+                return res.json();
+            })
+            .then(function(result) {
+                setLoading(false);
+                if (result.success) {
+                    showTip('发布成功！正在跳转...', 'success');
+                    setTimeout(function() {
+                        window.location.href = '/second/index.html';
+                    }, 1500);
+                } else {
+                    showTip(result.message || '发布失败', 'error');
+                }
+            })
+            .catch(function(err) {
+                setLoading(false);
+                console.error('错误:', err);
+                showTip('发布失败：' + err.message, 'error');
+            });
+        });
+
+        function resetForm() {
+            document.getElementById('publishForm').reset();
+            document.getElementById('iconPreview').innerHTML = '<span style="font-size:60px;">📦</span>';
+        }
+    </script>
+</body>
+</html>

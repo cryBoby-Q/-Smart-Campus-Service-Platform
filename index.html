@@ -1,110 +1,240 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <base href="/bike/">
-  <title>共享单车 - 功能选择</title>
-  <link rel="stylesheet" href="common.css" />
-  <script src="config.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>校园二手交易 - 首页</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Microsoft YaHei', Arial, sans-serif; background-color: #f5f5f5; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; }
+        .nav { display: flex; justify-content: center; gap: 20px; margin-top: 15px; flex-wrap: wrap; }
+        .nav a { color: white; text-decoration: none; padding: 8px 20px; border-radius: 20px; background: rgba(255,255,255,0.2); transition: all 0.3s; }
+        .nav a:hover, .nav a.active { background: white; color: #667eea; }
+        .container { max-width: 1200px; margin: 20px auto; padding: 0 20px; }
+        .search-bar { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; display: flex; gap: 15px; flex-wrap: wrap; }
+        .search-bar input { flex: 1; padding: 12px 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .search-bar select { padding: 12px 15px; border: 1px solid #ddd; border-radius: 5px; min-width: 120px; }
+        .search-bar button { padding: 12px 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .category-section { margin-bottom: 30px; }
+        .category-title { font-size: 20px; font-weight: bold; margin-bottom: 15px; padding-left: 10px; border-left: 4px solid #667eea; }
+        .goods-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .goods-card { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.05); transition: transform 0.3s; cursor: pointer; position: relative; }
+        .goods-card:hover { transform: translateY(-5px); }
+        .goods-img { width: 100%; height: 150px; background: linear-gradient(135deg, #f5f7fa 0%, #e0e7ff 100%); display: flex; align-items: center; justify-content: center; font-size: 60px; }
+        .goods-info { padding: 15px; }
+        .goods-title { font-size: 16px; font-weight: bold; margin-bottom: 10px; }
+        .goods-type { display: inline-block; padding: 3px 10px; background: #e3f2fd; color: #1976d2; border-radius: 12px; font-size: 12px; margin-bottom: 10px; }
+        .goods-price { font-size: 24px; color: #f44336; font-weight: bold; }
+        .buy-btn { position: absolute; bottom: 15px; right: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 20px; padding: 6px 16px; cursor: pointer; }
+        .cart-badge { position: fixed; bottom: 30px; right: 30px; background: #f44336; color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; z-index: 1000; }
+        .cart-badge span { position: absolute; top: -5px; right: -5px; background: #ff9800; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+        .cart-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1001; justify-content: center; align-items: center; }
+        .cart-modal-content { background: white; width: 400px; max-width: 90%; border-radius: 10px; padding: 20px; max-height: 80%; overflow-y: auto; }
+        .cart-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; }
+        .cart-total { padding: 15px 0; font-weight: bold; font-size: 18px; text-align: right; }
+        .checkout-btn { width: 100%; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .close-modal { float: right; cursor: pointer; font-size: 20px; }
+        .loading, .empty { text-align: center; padding: 50px; color: #999; }
+        .tip { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); padding: 12px 24px; border-radius: 30px; color: white; z-index: 9999; display: none; }
+        .tip.success { background: #4caf50; display: block; }
+        .tip.error { background: #f44336; display: block; }
+    </style>
 </head>
 <body>
-  <main class="container site-main">
-    <section class="page-header">
-      <h1 class="page-title">共享单车模块</h1>
-      <p class="page-subtitle">快速访问借车、报修、支付与骑行记录，提升运营效率与用户体验。</p>
-    </section>
-
-    <section class="feature-grid" id="featureGrid">
-      <article class="feature">
-        <div class="feature-icon">🔎</div>
-        <h2>查询单车</h2>
-        <p>查看当前位置的单车列表与可用状态，快速定位最近车辆。</p>
-        <a class="btn btn-primary" href="index.html?view=list">进入查询</a>
-      </article>
-      <article class="feature">
-        <div class="feature-icon">🚲</div>
-        <h2>借车</h2>
-        <p>按用户ID选择可借单车并发起借车操作，流程简洁明了。</p>
-        <a class="btn btn-primary" href="borrow.html">去借车</a>
-      </article>
-      <article class="feature">
-        <div class="feature-icon">📜</div>
-        <h2>我的骑行记录</h2>
-        <p>查看历史骑行记录并快速完成还车与结算。</p>
-        <a class="btn btn-primary" href="record.html">查看记录</a>
-      </article>
-      <article class="feature">
-        <div class="feature-icon">🔧</div>
-        <h2>故障报修</h2>
-        <p>提交故障单并将单车标记为维修，保障车辆状态准确。</p>
-        <a class="btn btn-primary" href="repair.html">报修</a>
-      </article>
-      <article class="feature">
-        <div class="feature-icon">💳</div>
-        <h2>订单支付</h2>
-        <p>查询待支付订单并完成支付，保持骑行账单清晰。</p>
-        <a class="btn btn-primary" href="payment.html">支付订单</a>
-      </article>
-    </section>
-
-    <section class="card" id="bikeQuerySection" style="display:none;">
-      <div class="page-header">
-        <h2 class="page-title">查询单车</h2>
-        <p class="page-subtitle">查看当前位置的单车列表与可用状态，快速定位最近车辆。</p>
-      </div>
-      <div id="bikeList">正在加载车辆列表……</div>
-      <div class="footer">
-        <a class="btn btn-secondary" href="index.html">返回首页</a>
-      </div>
-    </section>
-
-    <div class="footer" id="homeFooter">
-      <small>使用说明：请选择需要的功能进入相应页面。</small>
+    <div class="header">
+        <h1>🎓 校园二手交易平台</h1>
+        <div class="nav">
+            <a href="/second/index.html" class="active">首页</a>
+            <a href="/second/publish.html">发布闲置</a>
+            <a href="/second/my_publish.html">我的发布</a>
+            <a href="/second/my_collect.html">我的收藏</a>
+            <a href="/second/my_order.html">我的订单</a>
+        </div>
     </div>
-  </main>
 
-  <script src="common.js"></script>
-  <script>
-    function parseQueryParams() {
-      return Object.fromEntries(new URLSearchParams(window.location.search));
-    }
+    <div class="container">
+        <div class="search-bar">
+            <select id="typeFilter">
+                <option value="">全部分类</option>
+                <option value="二手书">📖 二手书</option>
+                <option value="电子产品">💻 电子产品</option>
+                <option value="生活用品">🛋️ 生活用品</option>
+                <option value="体育用品">⚽ 体育用品</option>
+                <option value="服饰鞋包">👔 服饰鞋包</option>
+            </select>
+            <input type="text" id="searchInput" placeholder="🔍 搜索商品...">
+            <button onclick="searchGoods()">搜索</button>
+        </div>
+        <div id="goodsContainer"><div class="loading">⏳ 加载中...</div></div>
+    </div>
 
-    function renderBikeItem(bike) {
-      return `
-        <div class="bike">
-          <div><strong>单车编号：</strong>${bike.bike_no}</div>
-          <div><strong>停放点位：</strong>${bike.position}</div>
-          <div><span class="tag status-${bike.status}">${bike.status}</span></div>
-        </div>`;
-    }
+    <div class="cart-badge" onclick="showCart()">🛒 <span id="cartCount">0</span></div>
+    <div id="cartModal" class="cart-modal">
+        <div class="cart-modal-content">
+            <span class="close-modal" onclick="closeCart()">&times;</span>
+            <h3>🛒 购物车</h3>
+            <div id="cartItems"></div>
+            <div class="cart-total" id="cartTotal">总计：¥0</div>
+            <button class="checkout-btn" onclick="checkout()">去结算</button>
+        </div>
+    </div>
+    <div id="tip" class="tip"></div>
 
-    async function loadBikeList() {
-      const bikeList = document.getElementById('bikeList');
-      const data = await apiGet('list_bikes');
-      if (!data.success) {
-        bikeList.innerHTML = `<div class="list-empty">加载失败：${data.message}</div>`;
-        return;
-      }
-      if (!data.bikes.length) {
-        bikeList.innerHTML = '<div class="list-empty">当前暂无单车数据。</div>';
-        return;
-      }
-      bikeList.innerHTML = data.bikes.map(renderBikeItem).join('');
-    }
+    <script>
+        const currentUserId = 1;
+        const API_BASE = 'http://localhost:3000';
+        let cart = [];
 
-    document.addEventListener('DOMContentLoaded', () => {
-      const params = parseQueryParams();
-      const querySection = document.getElementById('bikeQuerySection');
-      const featureGrid = document.getElementById('featureGrid');
-      const homeFooter = document.getElementById('homeFooter');
+        function showTip(msg, type) {
+            const tip = document.getElementById('tip');
+            tip.textContent = type === 'success' ? '✅ ' + msg : '❌ ' + msg;
+            tip.className = 'tip ' + type;
+            setTimeout(() => { tip.style.display = 'none'; }, 2000);
+        }
 
-      if (params.view === 'list') {
-        featureGrid.style.display = 'none';
-        homeFooter.style.display = 'none';
-        querySection.style.display = 'block';
-        loadBikeList();
-      }
-    });
-  </script>
+        function loadCart() {
+            fetch(`${API_BASE}/api/cart/list?user_id=${currentUserId}`)
+                .then(res => res.json())
+                .then(data => { if (data.success) { cart = data.data; updateCartBadge(); } });
+        }
+
+        function updateCartBadge() {
+            const count = cart.reduce((s, i) => s + i.quantity, 0);
+            document.getElementById('cartCount').innerText = count;
+        }
+
+        function addToCart(goodsId, title, price, event) {
+            event.stopPropagation();
+            fetch(`${API_BASE}/api/cart/add`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: currentUserId, goods_id: goodsId, quantity: 1 })
+            }).then(res => res.json()).then(data => {
+                if (data.success) { showTip(`已添加 ${title}`, 'success'); loadCart(); }
+                else showTip('添加失败', 'error');
+            });
+        }
+
+        function showCart() {
+            fetch(`${API_BASE}/api/cart/list?user_id=${currentUserId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        cart = data.data;
+                        const cartItemsDiv = document.getElementById('cartItems');
+                        if (cart.length === 0) {
+                            cartItemsDiv.innerHTML = '<div style="text-align:center;padding:20px;">购物车是空的</div>';
+                            document.getElementById('cartTotal').innerHTML = '总计：¥0';
+                        } else {
+                            cartItemsDiv.innerHTML = cart.map(item => `
+                                <div class="cart-item">
+                                    <div>${item.title}</div>
+                                    <div>¥${item.price} × ${item.quantity}
+                                        <button onclick="updateQty(${item.goods_id}, ${item.quantity - 1})">-</button>
+                                        <button onclick="updateQty(${item.goods_id}, ${item.quantity + 1})">+</button>
+                                        <button onclick="removeFromCart(${item.goods_id})">删除</button>
+                                    </div>
+                                </div>
+                            `).join('');
+                            const total = cart.reduce((s, i) => s + i.price * i.quantity, 0);
+                            document.getElementById('cartTotal').innerHTML = `总计：¥${total}`;
+                        }
+                        document.getElementById('cartModal').style.display = 'flex';
+                    }
+                });
+        }
+
+        function updateQty(goodsId, newQty) {
+            if (newQty <= 0) { removeFromCart(goodsId); return; }
+            fetch(`${API_BASE}/api/cart/update`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: currentUserId, goods_id: goodsId, quantity: newQty })
+            }).then(() => { loadCart(); showCart(); });
+        }
+
+        function removeFromCart(goodsId) {
+            fetch(`${API_BASE}/api/cart/remove`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: currentUserId, goods_id: goodsId })
+            }).then(() => { loadCart(); showCart(); });
+        }
+
+        function closeCart() { document.getElementById('cartModal').style.display = 'none'; }
+
+        function checkout() {
+            if (cart.length === 0) { showTip('购物车是空的', 'error'); return; }
+            const receiver_name = prompt('请输入收货人姓名：');
+            if (!receiver_name) return;
+            const receiver_phone = prompt('请输入收货人电话：');
+            if (!receiver_phone) return;
+            const receiver_address = prompt('请输入收货地址：');
+            if (!receiver_address) return;
+            
+            fetch(`${API_BASE}/api/order/create`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: currentUserId, receiver_name, receiver_phone, receiver_address, remark: '' })
+            }).then(res => res.json()).then(data => {
+                if (data.success) {
+                    showTip(`订单创建成功！订单号：${data.data.orderNo} 金额：¥${data.data.totalAmount}`, 'success');
+                    loadCart();
+                    closeCart();
+                    setTimeout(() => { window.location.href = '/second/my_order.html'; }, 2000);
+                } else { showTip(data.message || '创建订单失败', 'error'); }
+            }).catch(() => { showTip('创建订单失败', 'error'); });
+        }
+
+        function loadGoods() {
+            const type = document.getElementById('typeFilter').value;
+            const keyword = document.getElementById('searchInput').value;
+            let url = `${API_BASE}/api/goods/list`;
+            const params = [];
+            if (type) params.push(`type=${encodeURIComponent(type)}`);
+            if (keyword) params.push(`keyword=${encodeURIComponent(keyword)}`);
+            if (params.length) url += '?' + params.join('&');
+            
+            fetch(url).then(res => res.json()).then(data => {
+                if (data.success) {
+                    const goods = data.data;
+                    const grouped = {};
+                    goods.forEach(g => { if (!grouped[g.type]) grouped[g.type] = []; grouped[g.type].push(g); });
+                    let html = '';
+                    for (const [type, items] of Object.entries(grouped)) {
+                        html += `<div class="category-section"><div class="category-title">${getIcon(type)} ${type}</div><div class="goods-grid">`;
+                        items.forEach(item => {
+                            html += `<div class="goods-card" onclick="goToDetail(${item.id})">
+                                <div class="goods-img"><span style="font-size:60px;">${item.img || '📦'}</span></div>
+                                <div class="goods-info">
+                                    <div class="goods-title">${escapeHtml(item.title)}</div>
+                                    <span class="goods-type">${item.type}</span>
+                                    <div class="goods-price">¥${item.price}</div>
+                                </div>
+                                <button class="buy-btn" onclick="addToCart(${item.id}, '${escapeHtml(item.title)}', ${item.price}, event)">🛒 购买</button>
+                            </div>`;
+                        });
+                        html += `</div></div>`;
+                    }
+                    document.getElementById('goodsContainer').innerHTML = html || '<div class="empty">暂无商品</div>';
+                } else { document.getElementById('goodsContainer').innerHTML = '<div class="empty">加载失败</div>'; }
+            }).catch(() => { document.getElementById('goodsContainer').innerHTML = '<div class="empty">连接服务器失败</div>'; });
+        }
+
+        function getIcon(type) {
+            const icons = { '二手书': '📖', '电子产品': '💻', '生活用品': '🛋️', '体育用品': '⚽', '服饰鞋包': '👔' };
+            return icons[type] || '📦';
+        }
+
+        function escapeHtml(text) { if (!text) return ''; const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+        function searchGoods() { loadGoods(); }
+        function goToDetail(id) { window.location.href = `/second/goods_detail.html?id=${id}`; }
+
+        window.onload = () => { loadCart(); loadGoods(); };
+        document.getElementById('searchInput').addEventListener('keypress', e => { if (e.key === 'Enter') searchGoods(); });
+        document.getElementById('typeFilter').addEventListener('change', searchGoods);
+        window.onclick = e => { if (e.target === document.getElementById('cartModal')) closeCart(); };
+    </script>
 </body>
 </html>
