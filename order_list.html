@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>校园跑腿 - 我的订单</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            color: white;
+            padding: 20px 0;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .back-link {
+            display: inline-block;
+            color: white;
+            text-decoration: none;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        .filter-tabs {
+            display: flex;
+            background: rgba(255,255,255,0.2);
+            border-radius: 15px;
+            padding: 5px;
+            margin-bottom: 20px;
+        }
+
+        .filter-tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            color: white;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .filter-tab.active {
+            background: white;
+            color: #667eea;
+        }
+
+        .order-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .order-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .order-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .order-type {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .order-type .icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .order-type.food .icon {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+        }
+
+        .order-type.express .icon {
+            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+        }
+
+        .order-type.snack .icon {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+        }
+
+        .order-type .name {
+            font-weight: 600;
+            color: #333;
+            font-size: 18px;
+        }
+
+        .status-badge {
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .status-badge.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-badge.delivering {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        .status-badge.completed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-badge.cancelled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .order-info {
+            display: grid;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .info-row {
+            display: flex;
+            gap: 10px;
+            color: #666;
+        }
+
+        .info-row .label {
+            min-width: 70px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .order-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+
+        .order-price {
+            font-size: 24px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .order-time {
+            color: #999;
+            font-size: 14px;
+        }
+
+        .action-btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn.cancel {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .action-btn.cancel:hover {
+            background: #f5c6cb;
+        }
+
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .empty-state {
+            background: white;
+            border-radius: 15px;
+            padding: 60px 40px;
+            text-align: center;
+        }
+
+        .empty-state .icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        .empty-state h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .empty-state p {
+            color: #666;
+            margin-bottom: 25px;
+        }
+
+        .empty-btn {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        @media (max-width: 600px) {
+            .filter-tabs {
+                flex-wrap: wrap;
+            }
+            
+            .filter-tab {
+                flex: none;
+                width: 50%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-link">← 返回首页</a>
+        
+        <div class="header">
+            <h1>📋 我的订单</h1>
+        </div>
+
+        <div class="filter-tabs">
+            <div class="filter-tab active" data-status="all">全部</div>
+            <div class="filter-tab" data-status="待接单">待接单</div>
+            <div class="filter-tab" data-status="配送中">配送中</div>
+            <div class="filter-tab" data-status="已完成">已完成</div>
+        </div>
+
+        <div class="order-list" id="orderList">
+            <!-- 订单卡片将通过JS动态生成 -->
+        </div>
+    </div>
+
+    <script>
+        // 模拟订单数据
+        const orders = [
+            {
+                id: 1,
+                type: '外卖',
+                typeClass: 'food',
+                icon: '🍔',
+                address: '3号楼 302室',
+                goods: '黄焖鸡米饭一份，微辣',
+                price: 5.00,
+                status: '待接单',
+                time: '2026-06-12 10:30'
+            },
+            {
+                id: 2,
+                type: '快递',
+                typeClass: 'express',
+                icon: '📦',
+                address: '5号楼 501室',
+                goods: '顺丰快递，在菜鸟驿站',
+                price: 3.00,
+                status: '配送中',
+                time: '2026-06-12 09:15'
+            },
+            {
+                id: 3,
+                type: '零食',
+                typeClass: 'snack',
+                icon: '🍟',
+                address: '2号楼 203室',
+                goods: '可乐2瓶，薯片1包',
+                price: 4.00,
+                status: '已完成',
+                time: '2026-06-11 18:45'
+            },
+            {
+                id: 4,
+                type: '外卖',
+                typeClass: 'food',
+                icon: '🍔',
+                address: '1号楼 105室',
+                goods: '奶茶三杯，少冰',
+                price: 6.00,
+                status: '待接单',
+                time: '2026-06-12 11:00'
+            },
+            {
+                id: 5,
+                type: '快递',
+                typeClass: 'express',
+                icon: '📦',
+                address: '4号楼 402室',
+                goods: '京东快递，大件',
+                price: 5.00,
+                status: '已取消',
+                time: '2026-06-10 14:20'
+            }
+        ];
+
+        let currentFilter = 'all';
+
+        // 渲染订单列表
+        function renderOrders() {
+            const orderList = document.getElementById('orderList');
+            const filteredOrders = currentFilter === 'all' 
+                ? orders 
+                : orders.filter(order => order.status === currentFilter);
+
+            if (filteredOrders.length === 0) {
+                orderList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">📭</div>
+                        <h3>暂无订单</h3>
+                        <p>当前筛选条件下没有订单记录</p>
+                        <a href="order_add.html" class="empty-btn">去下单</a>
+                    </div>
+                `;
+                return;
+            }
+
+            orderList.innerHTML = filteredOrders.map(order => {
+                const statusClass = order.status === '待接单' ? 'pending' :
+                                   order.status === '配送中' ? 'delivering' :
+                                   order.status === '已完成' ? 'completed' : 'cancelled';
+                
+                const canCancel = order.status === '待接单';
+
+                return `
+                    <div class="order-card">
+                        <div class="order-header">
+                            <div class="order-type ${order.typeClass}">
+                                <div class="icon">${order.icon}</div>
+                                <div class="name">${order.type}代取</div>
+                            </div>
+                            <span class="status-badge ${statusClass}">${order.status}</span>
+                        </div>
+                        <div class="order-info">
+                            <div class="info-row">
+                                <span class="label">收货地址:</span>
+                                <span>${order.address}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">物品详情:</span>
+                                <span>${order.goods}</span>
+                            </div>
+                        </div>
+                        <div class="order-footer">
+                            <div>
+                                <div class="order-price">¥${order.price.toFixed(2)}</div>
+                                <div class="order-time">${order.time}</div>
+                            </div>
+                            ${canCancel ? `<button class="action-btn cancel" onclick="cancelOrder(${order.id})">取消订单</button>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 筛选标签点击事件
+        document.querySelectorAll('.filter-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                currentFilter = this.dataset.status;
+                renderOrders();
+            });
+        });
+
+        // 取消订单
+        function cancelOrder(id) {
+            if (confirm('确定要取消这个订单吗？')) {
+                const order = orders.find(o => o.id === id);
+                if (order) {
+                    order.status = '已取消';
+                    renderOrders();
+                    alert('订单已取消');
+                }
+            }
+        }
+
+        // 初始化渲染
+        renderOrders();
+    </script>
+</body>
+</html>
