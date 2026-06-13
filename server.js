@@ -1,467 +1,281 @@
 const express = require('express');
-const mysql = require('mysql2');
 const cors = require('cors');
+const mysql = require('mysql2/promise');
 const path = require('path');
+const http = require('http');
+const { Server } = require('socket.io');
 
 const app = express();
 const PORT = 3001;
 
-// 中间件
-app.use(cors());
+// MySQL连接配置
+const pool = mysql.createPool({
+  host: 'localhost',
+  port: 3306,
+  user: 'root',
+  password: '123456',
+  database: 'campus_service',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
+});
+
+// 增强CORS配置
+app.use(cors({
+  origin: true, // 反射请求源
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// 添加请求日志中间件
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path} from ${req.ip}`);
+  next();
+});
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '../page')));
 
-// MySQL数据库连接
-const db = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: '123456',  // 修改为你的数据库密码
-    database: 'campus_secondhand'  // 修改为你的数据库名
-});
 
-db.connect(err => {
-    if (err) {
-        console.error('MySQL数据库连接失败！', err);
-        return;
+
+// 初始化表结构并按需插入演示数据（避免每次重启清空数据）
+async function initializeDatabase() {
+    try {
+        const connection = await pool.getConnection();
+        
+        // 创建表（如果不存在）
+        await connection.query(`
+            CREATE TABLE IF NOT EXISTS lost_items (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                type INT NOT NULL,
+                goods_type VARCHAR(255) NOT NULL,
+                title VARCHAR(255),
+                description TEXT,
+                location VARCHAR(255),
+                contact VARCHAR(255) NOT NULL,
+                status INT DEFAULT 1,
+                create_time DATETIME DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        `);
+
+        // 检查表是否为空
+        const [rows] = await connection.query("SELECT COUNT(*) as cnt FROM lost_items");
+        if (rows[0].cnt > 0) {
+            console.log('数据库已存在数据，跳过初始化插入演示数据');
+            connection.release();
+            return;
+        }
+
+        // 插入演示数据
+        const demoData = [
+            [1, '证件', '', '【寻物】本人于6月10日下午3点左右在图书馆二楼电子阅览室丢失身份证一张。姓名：张明，身份证号：411************123。身份证外套有透明卡套，卡套上贴有蓝色星星贴纸。如有拾到者请速联系，必有重谢！联系电话：138****5678。', '图书馆二楼电子阅览室', '138****5678'],
+            [2, '手机', '', '【招领】拾到iPhone 14 Pro Max手机一部，颜色为深空黑色，手机背面贴有卡通贴纸，屏幕有轻微划痕。手机壳为透明硅胶材质。拾取地点：第一食堂二楼靠窗位置。请失主描述锁屏密码或手机内特征以核实身份。联系电话：159****1234。', '第一食堂二楼', '159****1234'],
+            [2, '钱包', '', '【招领】拾到黑色长款钱包一个，品牌为七匹狼，内含校园卡一张（姓名：王芳，学号：202311020101）、身份证一张、银行卡两张（建设银行、农业银行）及现金若干。拾取地点：体育馆看台第5排座椅下方。请失主描述现金大致金额及其他细节核实。', '体育馆看台', '188****9999'],
+            [1, '钥匙', '', '【寻物】丢失钥匙串一串，共有5把钥匙，其中一把为蓝色门禁卡，一个银色U盘（金士顿32G）。U盘内有重要毕业论文资料，如有拾到者请尽快联系，万分感激！丢失地点：教学楼C座3楼至5楼之间。', '教学楼C座', '139****1111'],
+            [2, '书本', '', '【招领】拾到《高等数学》教材一本，封面写有"李明"字样，内有笔记若干。拾于教学楼A座301教室。请失主描述书中具体内容核实。', '教学楼A座301', '155****2222'],
+            [1, '手机', '', '【寻物】丢失华为P50手机一部，黑色，手机壳为深蓝色硅胶材质。丢失时间6月9日晚，地点在操场看台附近。手机内有重要资料，拾到请速联系。', '操场看台', '177****3333']
+        ];
+
+        for (const item of demoData) {
+            await connection.query(
+                "INSERT INTO lost_items (type, goods_type, title, description, location, contact) VALUES (?, ?, ?, ?, ?, ?)",
+                item
+            );
+        }
+
+        console.log('✅ 数据库初始化完成，共插入', demoData.length, '条演示数据');
+        connection.release();
+    } catch (err) {
+        console.error('数据库初始化错误:', err);
     }
-    console.log('MySQL数据库连接成功！');
-});
-
-// ==================== 根路径重定向 ====================
-app.get('/', (req, res) => {
-    res.redirect('/second/index.html');
-});
-
-// ==================== 商品相关 API ====================
-
-// 获取商品列表
-app.get('/api/goods/list', (req, res) => {
-    const { type, keyword } = req.query;
-    let sql = `SELECT * FROM goods WHERE status = '上架'`;
-    const params = [];
-    
-    if (type && type !== '') {
-        sql += ` AND type = ?`;
-        params.push(type);
-    }
-    if (keyword && keyword !== '') {
-        sql += ` AND title LIKE ?`;
-        params.push(`%${keyword}%`);
-    }
-    
-    sql += ` ORDER BY create_time DESC`;
-    
-    db.query(sql, params, (err, data) => {
-        if (err) {
-            return res.json({ success: false, message: err.message });
-        }
-        res.json({ success: true, data: data });
-    });
-});
-
-// 获取商品详情
-app.get('/api/goods/detail', (req, res) => {
-    const { id } = req.query;
-    const sql = `SELECT * FROM goods WHERE id = ?`;
-    db.query(sql, [id], (err, data) => {
-        if (err) {
-            return res.json({ success: false, message: err.message });
-        }
-        res.json({ success: true, data: data[0] || null });
-    });
-});
-
-// 发布商品
-app.post('/api/goods/publish', (req, res) => {
-    const { user_id, title, type, price, content, img, status } = req.body;
-    const sql = `INSERT INTO goods (user_id, title, type, price, content, img, status, create_time) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`;
-    db.query(sql, [user_id, title, type, price, content, img, status], (err, result) => {
-        if (err) {
-            return res.json({ success: false, message: err.message });
-        }
-        res.json({ success: true, data: { id: result.insertId } });
-    });
-});
-
-// 获取我的发布
-app.get('/api/goods/my', (req, res) => {
-    const { user_id } = req.query;
-    const sql = `SELECT * FROM goods WHERE user_id = ? ORDER BY create_time DESC`;
-    db.query(sql, [user_id], (err, data) => {
-        if (err) {
-            return res.json({ success: false, message: err.message });
-        }
-        res.json({ success: true, data: data });
-    });
-});
-
-// 修改商品状态
-app.post('/api/goods/status', (req, res) => {
-    const { id, status } = req.body;
-    const sql = `UPDATE goods SET status = ? WHERE id = ?`;
-    db.query(sql, [status, id], (err) => {
-        if (err) {
-            return res.json({ success: false, message: err.message });
-        }
-        res.json({ success: true });
-    });
-});
-
-// 删除商品
-app.post('/api/goods/delete', (req, res) => {
-    const { id } = req.body;
-    
-    if (!id) {
-        return res.json({ success: false, message: '缺少商品ID' });
-    }
-    
-    db.query('DELETE FROM collect WHERE goods_id = ?', [id], (err) => {
-        if (err) console.error('删除收藏失败:', err);
-        db.query('DELETE FROM message WHERE goods_id = ?', [id], (err) => {
-            if (err) console.error('删除留言失败:', err);
-            db.query('DELETE FROM cart WHERE goods_id = ?', [id], (err) => {
-                if (err) console.error('删除购物车失败:', err);
-                db.query('DELETE FROM goods WHERE id = ?', [id], (err, result) => {
-                    if (err) {
-                        return res.json({ success: false, message: err.message });
-                    }
-                    if (result.affectedRows === 0) {
-                        return res.json({ success: false, message: '商品不存在' });
-                    }
-                    res.json({ success: true, message: '删除成功' });
-                });
-            });
-        });
-    });
-});
-
-// ==================== 收藏相关 API ====================
-
-app.get('/api/collect/check', (req, res) => {
-    const { user_id, goods_id } = req.query;
-    const sql = `SELECT * FROM collect WHERE user_id = ? AND goods_id = ?`;
-    db.query(sql, [user_id, goods_id], (err, data) => {
-        if (err) {
-            return res.json({ success: false, data: false });
-        }
-        res.json({ success: true, data: data.length > 0 });
-    });
-});
-
-app.post('/api/collect/add', (req, res) => {
-    const { user_id, goods_id } = req.body;
-    const sql = `INSERT INTO collect (user_id, goods_id, create_time) VALUES (?, ?, NOW())`;
-    db.query(sql, [user_id, goods_id], (err) => {
-        if (err) {
-            return res.json({ success: false, message: err.message });
-        }
-        res.json({ success: true });
-    });
-});
-
-app.post('/api/collect/cancel', (req, res) => {
-    const { user_id, goods_id } = req.body;
-    const sql = `DELETE FROM collect WHERE user_id = ? AND goods_id = ?`;
-    db.query(sql, [user_id, goods_id], (err) => {
-        if (err) {
-            return res.json({ success: false, message: err.message });
-        }
-        res.json({ success: true });
-    });
-});
-
-app.get('/api/collect/my', (req, res) => {
-    const { user_id } = req.query;
-    const sql = `SELECT c.id, c.goods_id, g.title, g.type, g.price, g.img 
-                 FROM collect c 
-                 LEFT JOIN goods g ON c.goods_id = g.id 
-                 WHERE c.user_id = ? 
-                 ORDER BY c.create_time DESC`;
-    db.query(sql, [user_id], (err, data) => {
-        if (err) {
-            return res.json({ success: false, message: err.message });
-        }
-        res.json({ success: true, data: data });
-    });
-});
-
-// ==================== 留言相关 API ====================
-
-app.get('/api/msg/list', (req, res) => {
-    const { goods_id } = req.query;
-    const sql = `SELECT * FROM message WHERE goods_id = ? ORDER BY msg_time ASC`;
-    db.query(sql, [goods_id], (err, data) => {
-        if (err) {
-            return res.json({ success: false, message: err.message });
-        }
-        res.json({ success: true, data: data });
-    });
-});
-
-app.post('/api/msg/send', (req, res) => {
-    const { goods_id, from_user_id, content } = req.body;
-    const sql = `INSERT INTO message (goods_id, from_user_id, content, msg_time) VALUES (?, ?, ?, NOW())`;
-    db.query(sql, [goods_id, from_user_id, content], (err) => {
-        if (err) {
-            return res.json({ success: false, message: err.message });
-        }
-        res.json({ success: true });
-    });
-});
-
-// ==================== 购物车 API ====================
-
-app.post('/api/cart/add', (req, res) => {
-    const { user_id, goods_id, quantity = 1 } = req.body;
-    
-    if (!user_id || !goods_id) {
-        return res.json({ success: false, message: '参数错误' });
-    }
-    
-    const sql = `INSERT INTO cart (user_id, goods_id, quantity, create_time) 
-                 VALUES (?, ?, ?, NOW()) 
-                 ON DUPLICATE KEY UPDATE quantity = quantity + ?`;
-    
-    db.query(sql, [user_id, goods_id, quantity, quantity], (err, result) => {
-        if (err) {
-            console.error('购物车添加失败:', err);
-            return res.json({ success: false, message: err.message });
-        }
-        res.json({ success: true, message: '添加成功' });
-    });
-});
-
-app.get('/api/cart/list', (req, res) => {
-    const { user_id } = req.query;
-    
-    if (!user_id) {
-        return res.json({ success: false, message: '缺少用户ID' });
-    }
-    
-    const sql = `SELECT c.id, c.user_id, c.goods_id, c.quantity, c.create_time,
-                        g.title, g.price, g.img, g.type
-                 FROM cart c 
-                 LEFT JOIN goods g ON c.goods_id = g.id 
-                 WHERE c.user_id = ? 
-                 ORDER BY c.create_time DESC`;
-    
-    db.query(sql, [user_id], (err, data) => {
-        if (err) {
-            console.error('获取购物车失败:', err);
-            return res.json({ success: false, message: err.message });
-        }
-        res.json({ success: true, data: data });
-    });
-});
-
-app.post('/api/cart/update', (req, res) => {
-    const { user_id, goods_id, quantity } = req.body;
-    
-    if (!user_id || !goods_id || quantity === undefined) {
-        return res.json({ success: false, message: '参数错误' });
-    }
-    
-    if (quantity <= 0) {
-        const delSql = `DELETE FROM cart WHERE user_id = ? AND goods_id = ?`;
-        db.query(delSql, [user_id, goods_id], (err) => {
-            res.json({ success: !err });
-        });
-    } else {
-        const sql = `UPDATE cart SET quantity = ? WHERE user_id = ? AND goods_id = ?`;
-        db.query(sql, [quantity, user_id, goods_id], (err) => {
-            res.json({ success: !err });
-        });
-    }
-});
-
-app.post('/api/cart/remove', (req, res) => {
-    const { user_id, goods_id } = req.body;
-    
-    const sql = `DELETE FROM cart WHERE user_id = ? AND goods_id = ?`;
-    db.query(sql, [user_id, goods_id], (err) => {
-        if (err) {
-            return res.json({ success: false, message: err.message });
-        }
-        res.json({ success: true, message: '删除成功' });
-    });
-});
-
-app.post('/api/cart/clear', (req, res) => {
-    const { user_id } = req.body;
-    
-    const sql = `DELETE FROM cart WHERE user_id = ?`;
-    db.query(sql, [user_id], (err) => {
-        res.json({ success: !err });
-    });
-});
-
-// ==================== 订单 API ====================
-
-// 生成订单号
-function generateOrderNo() {
-    const date = new Date();
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hour = String(date.getHours()).padStart(2, '0');
-    const minute = String(date.getMinutes()).padStart(2, '0');
-    const second = String(date.getSeconds()).padStart(2, '0');
-    const random = String(Math.floor(Math.random() * 1000)).padStart(3, '0');
-    return `${year}${month}${day}${hour}${minute}${second}${random}`;
 }
 
-// 创建订单
-app.post('/api/order/create', (req, res) => {
-    const { user_id, receiver_name, receiver_phone, receiver_address, remark } = req.body;
+// 调用初始化函数
+initializeDatabase();
+
+// 创建 HTTP server 并挂载 socket.io
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: {
+        origin: '*',
+        methods: ['GET', 'POST']
+    }
+});
+
+io.on('connection', (socket) => {
+    console.log('客户端连接: ', socket.id);
+    socket.on('disconnect', () => {
+        console.log('客户端断开: ', socket.id);
+    });
+});
+
+// ========== API 接口 ==========
+
+// 获取统计数据
+app.get('/api/lost/stats', async (req, res) => {
+    try {
+        const connection = await pool.getConnection();
+        
+        const [totalRows] = await connection.query("SELECT COUNT(*) as total FROM lost_items");
+        const [lostRows] = await connection.query("SELECT COUNT(*) as lost FROM lost_items WHERE type = 1");
+        const [foundRows] = await connection.query("SELECT COUNT(*) as found FROM lost_items WHERE type = 2");
+        const [claimedRows] = await connection.query("SELECT COUNT(*) as claimed FROM lost_items WHERE status = 2");
+        
+        connection.release();
+        
+        res.json({
+            code: 200,
+            data: {
+                total: totalRows[0].total || 0,
+                lost: lostRows[0].lost || 0,
+                found: foundRows[0].found || 0,
+                claimed: claimedRows[0].claimed || 0
+            }
+        });
+    } catch (err) {
+        console.error('获取统计数据错误:', err);
+        res.json({ code: 500, message: err.message });
+    }
+});
+
+// 获取列表
+app.get('/api/lost/list', async (req, res) => {
+    try {
+        const connection = await pool.getConnection();
+        let sql = "SELECT * FROM lost_items WHERE 1=1";
+        const params = [];
+        
+        if (req.query.type && req.query.type !== 'all') {
+            sql += " AND type = ?";
+            params.push(req.query.type);
+        }
+        if (req.query.goods_type && req.query.goods_type !== '全部') {
+            sql += " AND goods_type = ?";
+            params.push(req.query.goods_type);
+        }
+        if (req.query.keyword) {
+            sql += " AND (title LIKE ? OR description LIKE ? OR location LIKE ?)";
+            const keyword = `%${req.query.keyword}%`;
+            params.push(keyword, keyword, keyword);
+        }
+        
+        sql += " ORDER BY create_time DESC";
+        
+        // 添加分页支持
+        if (req.query.page && req.query.pageSize) {
+            const page = parseInt(req.query.page) || 1;
+            const pageSize = parseInt(req.query.pageSize) || 10;
+            const offset = (page - 1) * pageSize;
+            sql += ` LIMIT ${offset}, ${pageSize}`;
+        }
+        
+        const [rows] = await connection.query(sql, params);
+        connection.release();
+        
+        console.log('返回数据条数:', rows.length);
+        res.set('Content-Type', 'application/json; charset=utf-8');
+        res.json({ code: 200, data: rows });
+    } catch (err) {
+        console.error('查询错误:', err);
+        res.json({ code: 500, message: err.message, data: [] });
+    }
+});
+
+// 获取详情
+app.get('/api/lost/detail/:id', async (req, res) => {
+    try {
+        const connection = await pool.getConnection();
+        const [rows] = await connection.query("SELECT * FROM lost_items WHERE id = ?", [req.params.id]);
+        connection.release();
+        
+        if (rows.length === 0) {
+            res.json({ code: 404, message: '未找到该信息' });
+            return;
+        }
+        
+        console.log('返回详情 ID:', req.params.id);
+        res.json({ code: 200, data: rows[0] });
+    } catch (err) {
+        console.error('查询详情错误:', err);
+        res.json({ code: 500, message: err.message });
+    }
+});
+
+// 发布信息
+app.post('/api/lost/publish', async (req, res) => {
+    const { type, goods_type, title, description, location, contact } = req.body;
     
-    if (!user_id) {
-        return res.json({ success: false, message: '用户ID不能为空' });
+    console.log('收到发布请求: origin=', req.headers.origin, 'user-agent=', req.headers['user-agent'], 'ip=', req.ip);
+    console.log('请求体:', JSON.stringify(req.body, null, 2));
+    
+    // 验证必填项
+    if (!type) {
+        return res.json({ code: 400, message: '请选择信息类型' });
+    }
+    if (!goods_type) {
+        return res.json({ code: 400, message: '请选择物品类型' });
+    }
+    if (!description || description.trim() === '') {
+        return res.json({ code: 400, message: '请填写详细描述' });
+    }
+    if (!contact || contact.trim() === '') {
+        return res.json({ code: 400, message: '请填写联系方式' });
     }
     
-    const cartSql = `SELECT c.goods_id, c.quantity, g.title, g.price 
-                     FROM cart c 
-                     LEFT JOIN goods g ON c.goods_id = g.id 
-                     WHERE c.user_id = ?`;
-    
-    db.query(cartSql, [user_id], (err, cartItems) => {
-        if (err) {
-            return res.json({ success: false, message: err.message });
+    try {
+        const connection = await pool.getConnection();
+        const [result] = await connection.query(
+            "INSERT INTO lost_items (type, goods_type, title, description, location, contact) VALUES (?, ?, ?, ?, ?, ?)",
+            [type, goods_type, title || '', description, location || '', contact]
+        );
+        
+        const newId = result.insertId;
+        console.log('✅ 发布成功，ID:', newId);
+        
+        // 查询刚插入的记录并广播给所有客户端
+        const [rows] = await connection.query("SELECT * FROM lost_items WHERE id = ?", [newId]);
+        if (rows.length > 0) {
+            io.emit('new_item', rows[0]);
         }
         
-        if (cartItems.length === 0) {
-            return res.json({ success: false, message: '购物车是空的' });
-        }
-        
-        let totalAmount = 0;
-        cartItems.forEach(item => {
-            totalAmount += item.price * item.quantity;
-        });
-        
-        const orderNo = generateOrderNo();
-        
-        const orderSql = `INSERT INTO orders (order_no, user_id, total_amount, status, receiver_name, receiver_phone, receiver_address, remark, create_time) 
-                          VALUES (?, ?, ?, '待付款', ?, ?, ?, ?, NOW())`;
-        
-        db.query(orderSql, [orderNo, user_id, totalAmount, receiver_name, receiver_phone, receiver_address, remark], (err, result) => {
-            if (err) {
-                return res.json({ success: false, message: err.message });
-            }
-            
-            const orderId = result.insertId;
-            
-            const itemSql = `INSERT INTO order_items (order_id, goods_id, goods_title, goods_price, quantity, total_price) VALUES ?`;
-            const itemValues = cartItems.map(item => [
-                orderId, 
-                item.goods_id, 
-                item.title, 
-                item.price, 
-                item.quantity, 
-                item.price * item.quantity
-            ]);
-            
-            db.query(itemSql, [itemValues], (err) => {
-                if (err) {
-                    return res.json({ success: false, message: err.message });
-                }
-                
-                db.query('DELETE FROM cart WHERE user_id = ?', [user_id], () => {
-                    res.json({ 
-                        success: true, 
-                        data: { orderId: orderId, orderNo: orderNo, totalAmount: totalAmount },
-                        message: '订单创建成功'
-                    });
-                });
-            });
-        });
-    });
-});
-
-// 获取订单列表
-app.get('/api/order/list', (req, res) => {
-    const { user_id } = req.query;
-    
-    const sql = `SELECT * FROM orders WHERE user_id = ? ORDER BY create_time DESC`;
-    db.query(sql, [user_id], (err, data) => {
-        if (err) {
-            return res.json({ success: false, message: err.message });
-        }
-        res.json({ success: true, data: data });
-    });
-});
-
-// 获取订单详情
-app.get('/api/order/detail', (req, res) => {
-    const { order_id } = req.query;
-    
-    const orderSql = `SELECT * FROM orders WHERE id = ?`;
-    db.query(orderSql, [order_id], (err, orderData) => {
-        if (err) {
-            return res.json({ success: false, message: err.message });
-        }
-        
-        const itemsSql = `SELECT * FROM order_items WHERE order_id = ?`;
-        db.query(itemsSql, [order_id], (err, itemsData) => {
-            if (err) {
-                return res.json({ success: false, message: err.message });
-            }
-            res.json({ success: true, data: { order: orderData[0], items: itemsData } });
-        });
-    });
-});
-
-// 更新订单状态
-app.post('/api/order/status', (req, res) => {
-    const { order_id, status } = req.body;
-    
-    let updateTime = '';
-    if (status === '已付款') {
-        updateTime = ', pay_time = NOW()';
-    } else if (status === '已完成') {
-        updateTime = ', complete_time = NOW()';
+        connection.release();
+        res.json({ code: 200, message: '发布成功', data: { id: newId } });
+    } catch (err) {
+        console.error('数据库错误:', err);
+        res.json({ code: 500, message: err.message });
     }
-    
-    const sql = `UPDATE orders SET status = ?${updateTime} WHERE id = ?`;
-    db.query(sql, [status, order_id], (err) => {
-        if (err) {
-            return res.json({ success: false, message: err.message });
-        }
-        res.json({ success: true, message: '状态更新成功' });
-    });
 });
 
-// 取消订单
-app.post('/api/order/cancel', (req, res) => {
-    const { order_id } = req.body;
-    
-    const sql = `UPDATE orders SET status = '已取消' WHERE id = ? AND status = '待付款'`;
-    db.query(sql, [order_id], (err, result) => {
-        if (err) {
-            return res.json({ success: false, message: err.message });
+// 认领信息（标记为已认领并广播）
+app.post('/api/lost/claim', async (req, res) => {
+    const { info_id, claim_contact, claim_reason } = req.body;
+    console.log('收到认领请求:', { info_id, claim_contact, claim_reason });
+    if (!info_id) return res.json({ code: 400, message: '缺少 info_id' });
+
+    try {
+        const connection = await pool.getConnection();
+        
+        // 更新状态
+        await connection.query("UPDATE lost_items SET status = 2 WHERE id = ?", [info_id]);
+        
+        // 查询更新后的记录并广播
+        const [rows] = await connection.query("SELECT * FROM lost_items WHERE id = ?", [info_id]);
+        if (rows.length > 0) {
+            io.emit('update_item', rows[0]);
         }
-        if (result.affectedRows === 0) {
-            return res.json({ success: false, message: '只能取消待付款的订单' });
-        }
-        res.json({ success: true, message: '订单已取消' });
-    });
+        
+        connection.release();
+        res.json({ code: 200, message: '认领处理完成' });
+    } catch (err) {
+        console.error('认领更新错误:', err);
+        res.json({ code: 500, message: err.message });
+    }
 });
 
-// ==================== 启动服务器 ====================
-app.listen(PORT, () => {
-    console.log(`
-╔══════════════════════════════════════════════════════════╗
-║     🎓 校园二手交易平台服务已启动！                        ║
-║                                                          ║
-║     服务地址：http://localhost:${PORT}                     ║
-║     首页访问：http://localhost:${PORT}/second/index.html    ║
-║                                                          ║
-║     前端页面列表：                                         ║
-║     - 首页：http://localhost:${PORT}/second/index.html      ║
-║     - 发布页：http://localhost:${PORT}/second/publish.html  ║
-║     - 我的发布：http://localhost:${PORT}/second/my_publish.html ║
-║     - 我的收藏：http://localhost:${PORT}/second/my_collect.html ║
-║     - 我的订单：http://localhost:${PORT}/second/my_order.html ║
-║     - 详情页：http://localhost:${PORT}/second/goods_detail.html?id=1 ║
-╚════════════════════════════════════════════════════════════╝
-    `);
+// 启动服务器
+server.listen(PORT, () => {
+    console.log(`\n╔══════════════════════════════════════════════════════════╗`);
+    console.log(`║     ✅ 后端服务已启动                                      ║`);
+    console.log(`║     📍 地址: http://localhost:${PORT}                      ║`);
+    console.log(`║     📋 API: http://localhost:${PORT}/api/lost/list         ║`);
+    console.log(`╚══════════════════════════════════════════════════════════╝\n`);
 });
