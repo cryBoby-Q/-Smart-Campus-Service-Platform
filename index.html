@@ -3,256 +3,306 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>校园跑腿 - 首页</title>
+    <title>校园失物招领平台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .header {
-            text-align: center;
-            color: white;
-            padding: 40px 0;
-        }
-
-        .header h1 {
-            font-size: 48px;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-        }
-
-        .header p {
-            font-size: 18px;
-            opacity: 0.9;
-        }
-
-        .service-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-            margin-bottom: 40px;
-        }
-
-        .service-card {
-            background: white;
-            border-radius: 20px;
-            padding: 40px 30px;
-            text-align: center;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-
-        .service-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 30px 60px rgba(0,0,0,0.2);
-        }
-
-        .service-icon {
-            width: 100px;
-            height: 100px;
-            margin: 0 auto 20px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 48px;
-        }
-
-        .service-card.food .service-icon {
-            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
-        }
-
-        .service-card.express .service-icon {
-            background: linear-gradient(135deg, #4ecdc4, #44a08d);
-        }
-
-        .service-card.snack .service-icon {
-            background: linear-gradient(135deg, #f093fb, #f5576c);
-        }
-
-        .service-card h3 {
-            font-size: 24px;
-            color: #333;
-            margin-bottom: 10px;
-        }
-
-        .service-card p {
-            color: #666;
-            margin-bottom: 20px;
-        }
-
-        .price-tag {
-            display: inline-block;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            padding: 8px 20px;
-            border-radius: 20px;
-            font-weight: bold;
-            font-size: 16px;
-        }
-
-        .action-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            flex-wrap: wrap;
-            margin-bottom: 40px;
-        }
-
-        .btn {
-            padding: 15px 40px;
-            border: none;
-            border-radius: 50px;
-            font-size: 18px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
-        }
-
-        .btn-primary {
-            background: white;
-            color: #667eea;
-        }
-
-        .btn-primary:hover {
-            transform: scale(1.05);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-
-        .btn-secondary {
-            background: rgba(255,255,255,0.2);
-            color: white;
-            border: 2px solid white;
-        }
-
-        .btn-secondary:hover {
-            background: white;
-            color: #667eea;
-        }
-
-        .stats {
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 30px;
-            text-align: center;
-        }
-
-        .stat-item h2 {
-            font-size: 42px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .stat-item p {
-            color: #666;
-            font-size: 16px;
-            margin-top: 10px;
-        }
-
-        .footer {
-            text-align: center;
-            color: white;
-            padding: 30px 0;
-            opacity: 0.8;
-        }
-
-        @media (max-width: 768px) {
-            .header h1 {
-                font-size: 32px;
-            }
-            
-            .service-cards {
-                grid-template-columns: 1fr;
-            }
-        }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -12px rgba(0,0,0,0.15); }
+        .stat-card { transition: all 0.3s ease; cursor: pointer; }
+        .stat-card:hover { transform: translateY(-3px); }
+        .filter-active { background-color: #3B82F6 !important; color: white !important; }
+        .goods-active { background-color: #3B82F6 !important; color: white !important; border-color: #3B82F6 !important; }
     </style>
 </head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>🏃 校园跑腿服务</h1>
-            <p>便捷、高效、安全的校园生活助手</p>
-        </div>
+<body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
 
-        <div class="service-cards">
-            <div class="service-card food" onclick="goToOrder('外卖')">
-                <div class="service-icon">🍔</div>
-                <h3>外卖代取</h3>
-                <p>食堂、校外美食一键代取，送到宿舍</p>
-                <span class="price-tag">¥5 起</span>
-            </div>
-
-            <div class="service-card express" onclick="goToOrder('快递')">
-                <div class="service-icon">📦</div>
-                <h3>快递代取</h3>
-                <p>菜鸟驿站、快递柜包裹送货上门</p>
-                <span class="price-tag">¥3 起</span>
-            </div>
-
-            <div class="service-card snack" onclick="goToOrder('零食')">
-                <div class="service-icon">🍟</div>
-                <h3>零食代购</h3>
-                <p>超市、便利店零食饮料即时配送</p>
-                <span class="price-tag">¥4 起</span>
+    <nav class="bg-white/95 backdrop-blur-sm shadow-md sticky top-0 z-50 border-b border-gray-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                        <i class="fa fa-search text-white text-xl"></i>
+                    </div>
+                    <h1 class="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">校园失物招领平台</h1>
+                </div>
+                <button onclick="location.href='publish_lost.html'" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-5 py-2.5 rounded-xl font-medium transition-all flex items-center space-x-2 shadow-md hover:shadow-lg">
+                    <i class="fa fa-plus-circle text-base"></i>
+                    <span>发布信息</span>
+                </button>
             </div>
         </div>
+    </nav>
 
-        <div class="action-buttons">
-            <a href="order_add.html" class="btn btn-primary">📝 立即下单</a>
-            <a href="order_list.html" class="btn btn-secondary">📋 我的订单</a>
-            <a href="rider_receive.html" class="btn btn-secondary">🚴 骑手接单</a>
-        </div>
-
-        <div class="stats">
-            <div class="stat-item">
-                <h2>1000+</h2>
-                <p>已完成订单</p>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-5 mb-8">
+            <div class="stat-card bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-5 shadow-md border border-blue-200">
+                <div class="flex items-center justify-between">
+                    <div><p class="text-blue-600 text-sm font-medium mb-1">总发布数</p><p class="text-3xl font-extrabold text-blue-700" id="stat-total">0</p></div>
+                    <div class="w-12 h-12 bg-blue-500 rounded-2xl flex items-center justify-center shadow-md"><i class="fa fa-database text-white text-xl"></i></div>
+                </div>
+                <div class="mt-3 text-xs text-blue-500"><i class="fa fa-line-chart"></i> 累计发布</div>
             </div>
-            <div class="stat-item">
-                <h2>50+</h2>
-                <p>认证骑手</p>
+            <div class="stat-card bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl p-5 shadow-md border border-orange-200">
+                <div class="flex items-center justify-between">
+                    <div><p class="text-orange-600 text-sm font-medium mb-1">寻物启事</p><p class="text-3xl font-extrabold text-orange-700" id="stat-lost">0</p></div>
+                    <div class="w-12 h-12 bg-orange-500 rounded-2xl flex items-center justify-center shadow-md"><i class="fa fa-search text-white text-xl"></i></div>
+                </div>
+                <div class="mt-3 text-xs text-orange-500"><i class="fa fa-exclamation-circle"></i> 等待帮助</div>
             </div>
-            <div class="stat-item">
-                <h2>15分钟</h2>
-                <p>平均配送时间</p>
+            <div class="stat-card bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 shadow-md border border-green-200">
+                <div class="flex items-center justify-between">
+                    <div><p class="text-green-600 text-sm font-medium mb-1">招领信息</p><p class="text-3xl font-extrabold text-green-700" id="stat-found">0</p></div>
+                    <div class="w-12 h-12 bg-green-500 rounded-2xl flex items-center justify-center shadow-md"><i class="fa fa-hand-paper-o text-white text-xl"></i></div>
+                </div>
+                <div class="mt-3 text-xs text-green-500"><i class="fa fa-gift"></i> 待认领</div>
             </div>
-            <div class="stat-item">
-                <h2>99.8%</h2>
-                <p>好评率</p>
+            <div class="stat-card bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-5 shadow-md border border-purple-200">
+                <div class="flex items-center justify-between">
+                    <div><p class="text-purple-600 text-sm font-medium mb-1">已认领</p><p class="text-3xl font-extrabold text-purple-700" id="stat-claimed">0</p></div>
+                    <div class="w-12 h-12 bg-purple-500 rounded-2xl flex items-center justify-center shadow-md"><i class="fa fa-check-circle text-white text-xl"></i></div>
+                </div>
+                <div class="mt-3 text-xs text-purple-500"><i class="fa fa-smile-o"></i> 成功找回</div>
             </div>
         </div>
 
-        <div class="footer">
-            <p>© 2026 校园跑腿服务平台 | 让校园生活更便捷</p>
+        <div class="bg-white rounded-2xl shadow-md p-6 mb-7 border border-gray-100">
+            <div class="flex flex-col md:flex-row gap-4">
+                <div class="flex-1 relative">
+                    <i class="fa fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                    <input type="text" id="searchInput" placeholder="搜索物品、地点或描述..." class="w-full pl-12 pr-4 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/30">
+                </div>
+                <div class="flex gap-2">
+                    <button data-type="all" class="filter-btn px-5 py-3 rounded-xl font-medium text-sm bg-gray-100 text-gray-600">📋 全部</button>
+                    <button data-type="1" class="filter-btn px-5 py-3 rounded-xl font-medium text-sm bg-gray-100 text-gray-600">🔍 寻物</button>
+                    <button data-type="2" class="filter-btn px-5 py-3 rounded-xl font-medium text-sm bg-gray-100 text-gray-600">🤲 招领</button>
+                </div>
+            </div>
+            <div class="flex flex-wrap gap-2.5 mt-5">
+                <button data-goods="全部" class="goods-btn px-4 py-1.5 rounded-full text-sm font-medium border bg-gray-100 text-gray-600 border-gray-200">全部类型</button>
+                <button data-goods="证件" class="goods-btn px-4 py-1.5 rounded-full text-sm font-medium border bg-gray-100 text-gray-600 border-gray-200">🪪 证件</button>
+                <button data-goods="手机" class="goods-btn px-4 py-1.5 rounded-full text-sm font-medium border bg-gray-100 text-gray-600 border-gray-200">📱 手机</button>
+                <button data-goods="书本" class="goods-btn px-4 py-1.5 rounded-full text-sm font-medium border bg-gray-100 text-gray-600 border-gray-200">📚 书本</button>
+                <button data-goods="钱包" class="goods-btn px-4 py-1.5 rounded-full text-sm font-medium border bg-gray-100 text-gray-600 border-gray-200">👛 钱包</button>
+                <button data-goods="钥匙" class="goods-btn px-4 py-1.5 rounded-full text-sm font-medium border bg-gray-100 text-gray-600 border-gray-200">🔑 钥匙</button>
+                <button data-goods="其他" class="goods-btn px-4 py-1.5 rounded-full text-sm font-medium border bg-gray-100 text-gray-600 border-gray-200">📦 其他</button>
+            </div>
+        </div>
+
+        <div id="listContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        <div id="emptyState" class="hidden text-center py-20 bg-white rounded-2xl shadow-sm">
+            <i class="fa fa-inbox text-5xl text-gray-300"></i>
+            <p class="text-gray-500 mt-3">暂无信息</p>
         </div>
     </div>
 
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-5 py-3 rounded-full shadow-lg text-sm z-50 transition-all duration-300 opacity-0 pointer-events-none">
+        <span id="toastMsg"></span>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script>
-        function goToOrder(type) {
-            window.location.href = 'order_add.html?type=' + encodeURIComponent(type);
+        const API_BASE = 'http://localhost:3001/api/lost';
+        const socket = io('http://localhost:3001');
+        socket.on('new_item', () => { loadStats(); loadList(); showToast('🔔 有新信息'); });
+        socket.on('update_item', () => { loadStats(); loadList(); showToast('🔄 信息已更新'); });
+        
+        let currentType = 'all';
+        let currentGoods = '全部';
+        let currentKeyword = '';
+
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = msg;
+            if (isError) {
+                toast.classList.add('bg-red-600');
+                toast.classList.remove('bg-gray-800');
+            } else {
+                toast.classList.add('bg-gray-800');
+                toast.classList.remove('bg-red-600');
+            }
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            toast.classList.add('opacity-100');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 2000);
         }
+
+        async function loadStats() {
+            try {
+                const res = await fetch(API_BASE + '/stats');
+                const data = await res.json();
+                if (data.code === 200 && data.data) {
+                    document.getElementById('stat-total').innerText = data.data.total || 0;
+                    document.getElementById('stat-lost').innerText = data.data.lost || 0;
+                    document.getElementById('stat-found').innerText = data.data.found || 0;
+                    document.getElementById('stat-claimed').innerText = data.data.claimed || 0;
+                }
+            } catch(e) {
+                console.log('统计加载失败');
+            }
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return String(text).replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+
+        function formatDate(time) {
+            if (!time) return '未知';
+            try {
+                let d = new Date(time);
+                return `${d.getMonth()+1}月${d.getDate()}日`;
+            } catch(e) {
+                return '近期';
+            }
+        }
+
+        function getTitle(item) {
+            if (item.title && item.title.trim() !== '') {
+                return item.title.trim();
+            }
+            let goods = item.goods_type || '物品';
+            return item.type === 2 ? `✨ 招领${goods}` : `🔍 寻找${goods}`;
+        }
+
+        function renderList(items) {
+            const container = document.getElementById('listContainer');
+            const emptyState = document.getElementById('emptyState');
+            
+            if (!items || items.length === 0) {
+                container.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            
+            emptyState.classList.add('hidden');
+            
+            let html = '';
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                const title = getTitle(item);
+                const typeText = item.type === 1 ? '寻物启事' : '招领信息';
+                const typeColor = item.type === 1 ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700';
+                const statusText = item.status === 1 ? '未认领' : '已认领';
+                const statusColor = item.status === 1 ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500';
+                const description = (item.description && item.description.trim() !== '') ? item.description : '暂无详细描述';
+                const goodsType = item.goods_type || '其他';
+                const location = item.location || '未填写地点';
+                
+                html += `
+                    <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-5 card-hover cursor-pointer" onclick="goDetail(${item.id})">
+                        <div class="flex justify-between items-start mb-3">
+                            <span class="px-3 py-1.5 rounded-full text-xs font-semibold ${typeColor}">${typeText}</span>
+                            <span class="px-3 py-1.5 rounded-full text-xs font-medium ${statusColor}">${statusText}</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-800 mb-2">${escapeHtml(title)}</h3>
+                        <p class="text-gray-600 text-sm mb-3 leading-relaxed" style="white-space:normal; word-break:break-word;">${escapeHtml(description)}</p>
+                        <div class="flex flex-wrap gap-4 text-xs text-gray-400 mt-2 pt-2 border-t border-gray-50">
+                            <span><i class="fa fa-tag mr-1"></i>${escapeHtml(goodsType)}</span>
+                            <span><i class="fa fa-map-marker mr-1"></i>${escapeHtml(location)}</span>
+                            <span><i class="fa fa-clock-o mr-1"></i>${formatDate(item.create_time)}</span>
+                        </div>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
+
+        async function loadList() {
+            const container = document.getElementById('listContainer');
+            container.innerHTML = '<div class="col-span-full text-center py-10 text-gray-400">加载中...</div>';
+            
+            try {
+                let url = API_BASE + '/list?';
+                if (currentType !== 'all') url += 'type=' + currentType + '&';
+                if (currentGoods !== '全部') url += 'goods_type=' + encodeURIComponent(currentGoods) + '&';
+                if (currentKeyword.trim() !== '') url += 'keyword=' + encodeURIComponent(currentKeyword.trim());
+                
+                const res = await fetch(url);
+                console.log('API请求:', url);
+                const result = await res.json();
+                console.log('API响应:', result);
+                
+                if (result.code === 200 && Array.isArray(result.data)) {
+                    console.log('收到数据条数:', result.data.length);
+                    renderList(result.data);
+                } else {
+                    renderList([]);
+                }
+            } catch(err) {
+                console.error('请求失败:', err);
+                showToast('❌ 后端未启动，请先启动后端服务', true);
+                renderList([]);
+            }
+        }
+
+        function initFilters() {
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.filter-btn').forEach(b => {
+                        b.classList.remove('filter-active', 'bg-blue-500', 'text-white');
+                        b.classList.add('bg-gray-100', 'text-gray-600');
+                    });
+                    this.classList.remove('bg-gray-100', 'text-gray-600');
+                    this.classList.add('filter-active', 'bg-blue-500', 'text-white');
+                    currentType = this.dataset.type;
+                    loadList();
+                });
+            });
+            
+            document.querySelectorAll('.goods-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.goods-btn').forEach(b => {
+                        b.classList.remove('goods-active', 'bg-blue-500', 'text-white');
+                        b.classList.add('bg-gray-100', 'text-gray-600', 'border-gray-200');
+                    });
+                    this.classList.remove('bg-gray-100', 'text-gray-600', 'border-gray-200');
+                    this.classList.add('goods-active', 'bg-blue-500', 'text-white');
+                    currentGoods = this.dataset.goods;
+                    loadList();
+                });
+            });
+            
+            let timer;
+            document.getElementById('searchInput').addEventListener('input', function(e) {
+                clearTimeout(timer);
+                timer = setTimeout(() => {
+                    currentKeyword = e.target.value;
+                    loadList();
+                }, 400);
+            });
+            
+            // 重置过滤器但不触发加载(避免重复请求)
+            document.querySelectorAll('.filter-btn').forEach(b => {
+                b.classList.remove('filter-active', 'bg-blue-500', 'text-white');
+                b.classList.add('bg-gray-100', 'text-gray-600');
+            });
+            document.querySelector('.filter-btn[data-type="all"]').classList.add('filter-active', 'bg-blue-500', 'text-white');
+            
+            document.querySelectorAll('.goods-btn').forEach(b => {
+                b.classList.remove('goods-active', 'bg-blue-500', 'text-white');
+                b.classList.add('bg-gray-100', 'text-gray-600', 'border-gray-200');
+            });
+            document.querySelector('.goods-btn[data-goods="全部"]').classList.add('goods-active', 'bg-blue-500', 'text-white');
+            
+            currentType = 'all';
+            currentGoods = '全部';
+        }
+
+        window.goDetail = function(id) {
+            window.location.href = `detail.html?id=${id}`;
+        };
+
+        initFilters();
+        loadStats();
+        loadList();
+        setInterval(loadStats, 30000);
     </script>
 </body>
 </html>
