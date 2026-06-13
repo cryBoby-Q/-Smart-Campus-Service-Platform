@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>校园跑腿 - 下单</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            padding: 30px 0;
+        }
+
+        .header h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+        }
+
+        .back-link {
+            display: inline-block;
+            color: white;
+            text-decoration: none;
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        .form-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .form-label span {
+            color: #e74c3c;
+        }
+
+        .type-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .type-option {
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .type-option:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .type-option.active {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .type-option .icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .type-option .name {
+            font-weight: 600;
+        }
+
+        .form-input, .form-textarea, .form-select {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .form-input:focus, .form-textarea:focus, .form-select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .price-calculator {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .price-calculator .label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .price-calculator .price {
+            font-size: 36px;
+            font-weight: bold;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .tips {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+
+        .tips h4 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .tips ul {
+            color: #666;
+            padding-left: 20px;
+            line-height: 1.8;
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #27ae60;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-weight: 600;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        @media (max-width: 600px) {
+            .form-card {
+                padding: 25px;
+            }
+            
+            .type-selector {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-link">← 返回首页</a>
+        
+        <div class="header">
+            <h1>📝 发布跑腿订单</h1>
+        </div>
+
+        <div class="form-card">
+            <form id="orderForm">
+                <div class="form-group">
+                    <label class="form-label">服务类型 <span>*</span></label>
+                    <div class="type-selector">
+                        <div class="type-option active" data-type="外卖" data-price="5">
+                            <div class="icon">🍔</div>
+                            <div class="name">外卖代取</div>
+                        </div>
+                        <div class="type-option" data-type="快递" data-price="3">
+                            <div class="icon">📦</div>
+                            <div class="name">快递代取</div>
+                        </div>
+                        <div class="type-option" data-type="零食" data-price="4">
+                            <div class="icon">🍟</div>
+                            <div class="name">零食代购</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">收货地址 <span>*</span></label>
+                    <select class="form-select" id="address" required>
+                        <option value="">请选择收货地址</option>
+                        <option value="1号楼 101室">1号楼 101室</option>
+                        <option value="2号楼 203室">2号楼 203室</option>
+                        <option value="3号楼 302室">3号楼 302室</option>
+                        <option value="4号楼 402室">4号楼 402室</option>
+                        <option value="5号楼 501室">5号楼 501室</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">商品/物品详情 <span>*</span></label>
+                    <textarea class="form-textarea" id="goodsInfo" placeholder="请详细描述需要代取/代购的物品信息，例如：黄焖鸡米饭一份，微辣；或者：顺丰快递，取件码1234" required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <div class="price-calculator">
+                        <div class="label">预计配送费用</div>
+                        <div class="price">¥<span id="calculatedPrice">5</span>.00</div>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn">✅ 提交订单</button>
+            </form>
+
+            <div class="tips">
+                <h4>💡 温馨提示</h4>
+                <ul>
+                    <li>请准确填写物品信息，以便骑手快速识别</li>
+                    <li>骑手接单后会第一时间联系您确认</li>
+                    <li>配送完成后请确认收货并评价</li>
+                    <li>如有问题可随时联系平台客服</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">订单提交成功！</div>
+
+    <script>
+        // 获取URL参数
+        const urlParams = new URLSearchParams(window.location.search);
+        const selectedType = urlParams.get('type');
+        
+        // 初始化类型选择
+        const typeOptions = document.querySelectorAll('.type-option');
+        let selectedPrice = 5;
+
+        // 如果URL有参数，自动选中对应类型
+        if (selectedType) {
+            typeOptions.forEach(option => {
+                if (option.dataset.type === selectedType) {
+                    typeOptions.forEach(o => o.classList.remove('active'));
+                    option.classList.add('active');
+                    selectedPrice = parseInt(option.dataset.price);
+                    document.getElementById('calculatedPrice').textContent = selectedPrice;
+                }
+            });
+        }
+
+        // 类型选择事件
+        typeOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                typeOptions.forEach(o => o.classList.remove('active'));
+                this.classList.add('active');
+                selectedPrice = parseInt(this.dataset.price);
+                document.getElementById('calculatedPrice').textContent = selectedPrice;
+            });
+        });
+
+        // 表单提交
+        document.getElementById('orderForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const orderType = document.querySelector('.type-option.active').dataset.type;
+            const address = document.getElementById('address').value;
+            const goodsInfo = document.getElementById('goodsInfo').value;
+
+            if (!address) {
+                alert('请选择收货地址');
+                return;
+            }
+
+            if (!goodsInfo.trim()) {
+                alert('请填写物品详情');
+                return;
+            }
+
+            // 模拟API调用
+            const orderData = {
+                user_id: 1,
+                order_type: orderType,
+                address: address,
+                goods_info: goodsInfo,
+                price: selectedPrice
+            };
+
+            console.log('提交订单数据:', orderData);
+            
+            // 显示成功提示
+            showToast();
+            
+            // 2秒后跳转到订单列表
+            setTimeout(() => {
+                window.location.href = 'order_list.html';
+            }, 2000);
+        });
+
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
