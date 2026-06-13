@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>发布信息 - 校园失物招领平台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+</head>
+<body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
+
+    <nav class="bg-white/95 backdrop-blur-sm shadow-md sticky top-0 z-50">
+        <div class="max-w-3xl mx-auto px-4 py-3 flex items-center">
+            <button onclick="location.href='index.html'" class="mr-4 text-gray-600 hover:text-gray-800">
+                <i class="fa fa-arrow-left text-xl"></i>
+            </button>
+            <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                <i class="fa fa-search text-white text-sm"></i>
+            </div>
+            <h1 class="text-xl font-bold ml-3 text-gray-800">发布信息</h1>
+        </div>
+    </nav>
+
+    <div class="max-w-3xl mx-auto px-4 py-6">
+        <div class="bg-white rounded-2xl p-6 md:p-8 shadow-md border border-gray-100">
+            <form id="publishForm">
+                <div class="mb-6">
+                    <label class="block font-semibold text-gray-700 mb-3">信息类型 <span class="text-red-500">*</span></label>
+                    <div class="grid grid-cols-2 gap-4">
+                        <label class="type-option cursor-pointer">
+                            <input type="radio" name="type" value="1" class="hidden" checked>
+                            <div class="border-2 border-gray-200 rounded-xl p-4 text-center transition-all hover:border-blue-400">
+                                <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                                    <i class="fa fa-search text-orange-500 text-xl"></i>
+                                </div>
+                                <p class="font-medium text-gray-800">寻物启事</p>
+                                <p class="text-xs text-gray-400">我丢失了物品</p>
+                            </div>
+                        </label>
+                        <label class="type-option cursor-pointer">
+                            <input type="radio" name="type" value="2" class="hidden">
+                            <div class="border-2 border-gray-200 rounded-xl p-4 text-center transition-all hover:border-blue-400">
+                                <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                                    <i class="fa fa-hand-paper-o text-green-500 text-xl"></i>
+                                </div>
+                                <p class="font-medium text-gray-800">招领信息</p>
+                                <p class="text-xs text-gray-400">我拾到了物品</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block font-semibold text-gray-700 mb-2">物品类型 <span class="text-red-500">*</span></label>
+                    <select name="goods_type" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                        <option value="">请选择物品类型</option>
+                        <option value="证件">🪪 证件</option>
+                        <option value="手机">📱 手机</option>
+                        <option value="书本">📚 书本</option>
+                        <option value="钱包">👛 钱包</option>
+                        <option value="钥匙">🔑 钥匙</option>
+                        <option value="其他">📦 其他</option>
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block font-semibold text-gray-700 mb-2">标题 <span class="text-gray-400 text-sm font-normal">（选填，不填自动生成）</span></label>
+                    <input type="text" name="title" placeholder="如：寻找黑色钱包" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                </div>
+
+                <div class="mb-4">
+                    <label class="block font-semibold text-gray-700 mb-2">详细描述 <span class="text-red-500">*</span></label>
+                    <textarea name="description" required rows="6" placeholder="请详细描述物品特征、丢失或拾到的具体情况、时间、地点等..." class="w-full px-4 py-3 border border-gray-200 rounded-xl resize-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"></textarea>
+                    <p class="text-xs text-gray-400 mt-1">💡 详细描述将完整显示在首页卡片上</p>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block font-semibold text-gray-700 mb-2">地点 <span class="text-gray-400 text-sm font-normal">（选填）</span></label>
+                    <input type="text" name="location" placeholder="如：图书馆二楼" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                </div>
+
+                <div class="mb-6">
+                    <label class="block font-semibold text-gray-700 mb-2">联系方式 <span class="text-red-500">*</span></label>
+                    <input type="text" name="contact" required placeholder="手机号或微信号" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                </div>
+
+                <button type="submit" id="submitBtn" class="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white py-3.5 rounded-xl font-medium transition-all shadow-md">
+                    <i class="fa fa-paper-plane mr-2"></i> 发布信息
+                </button>
+            </form>
+        </div>
+
+        <div class="mt-5 bg-blue-50 rounded-xl p-5 border border-blue-100">
+            <h3 class="font-medium text-blue-800 flex items-center"><i class="fa fa-info-circle mr-2"></i>温馨提示</h3>
+            <ul class="text-sm text-blue-700 mt-2 space-y-1 ml-5 list-disc">
+                <li>请如实填写信息，确保联系方式准确有效</li>
+                <li>标题若不填写，将自动生成（如：招领手机、寻找证件）</li>
+                <li>详细描述将完整显示，请认真填写</li>
+            </ul>
+        </div>
+    </div>
+
+    <div id="successModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-2xl p-8 text-center max-w-sm mx-4">
+            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fa fa-check text-green-500 text-2xl"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-800 mb-2">发布成功！</h3>
+            <p class="text-gray-500 mb-6">您的信息已成功发布</p>
+            <div class="flex gap-3">
+                <button onclick="location.href='index.html'" class="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white py-2.5 rounded-xl font-medium">返回列表</button>
+                <button onclick="location.reload()" class="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-xl font-medium hover:bg-gray-200">继续发布</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="errorModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-2xl p-8 text-center max-w-sm mx-4">
+            <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fa fa-exclamation-triangle text-red-500 text-2xl"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-800 mb-2">发布失败</h3>
+            <p class="text-gray-500 mb-6" id="errorMsg"></p>
+            <button onclick="closeErrorModal()" class="w-full bg-gray-500 text-white py-2.5 rounded-xl font-medium">关闭</button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3001/api/lost';
+        
+        document.querySelectorAll('.type-option input').forEach(radio => {
+            radio.addEventListener('change', function() {
+                document.querySelectorAll('.type-option div').forEach(div => {
+                    div.classList.remove('border-blue-400', 'bg-blue-50');
+                    div.classList.add('border-gray-200');
+                });
+                if (this.checked) {
+                    this.nextElementSibling.classList.remove('border-gray-200');
+                    this.nextElementSibling.classList.add('border-blue-400', 'bg-blue-50');
+                }
+            });
+        });
+        document.querySelector('.type-option input:checked').nextElementSibling.classList.add('border-blue-400', 'bg-blue-50');
+        
+        function closeErrorModal() {
+            document.getElementById('errorModal').classList.add('hidden');
+        }
+        
+        document.getElementById('publishForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i> 发布中...';
+            
+            const formData = new FormData(e.target);
+            const data = {
+                type: parseInt(formData.get('type')),
+                goods_type: formData.get('goods_type'),
+                title: formData.get('title') || '',
+                description: formData.get('description'),
+                location: formData.get('location') || '',
+                contact: formData.get('contact')
+            };
+            
+            console.log('发送数据:', data);
+            
+            try {
+                const res = await fetch(API_BASE + '/publish', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                if (!res.ok) {
+                    const error = await res.json().catch(() => ({ message: '请求失败' }));
+                    throw new Error(error.message || `HTTP错误: ${res.status}`);
+                }
+                
+                const result = await res.json();
+                console.log('返回结果:', result);
+                
+                if (result.code === 200) {
+                    document.getElementById('successModal').classList.remove('hidden');
+                    // 3秒后自动返回列表页
+                    setTimeout(() => location.href = 'index.html', 3000);
+                } else {
+                    throw new Error(result.message || '发布失败');
+                }
+            } catch(err) {
+                console.error('请求错误:', err);
+                document.getElementById('errorMsg').innerText = err.message || '发布失败，请检查网络连接';
+                document.getElementById('errorModal').classList.remove('hidden');
+            }
+            
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa fa-paper-plane mr-2"></i> 发布信息';
+        });
+    </script>
+</body>
+</html>
